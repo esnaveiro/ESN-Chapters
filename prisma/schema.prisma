@@ -1,0 +1,219 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum MemberStatus {
+  NEWBIE
+  CANDIDATE_MEMBER
+  JUNIOR
+  SENIOR
+  ALUMNI
+}
+
+enum MilestoneType {
+  EVENT
+  FIRST
+  AWARD
+  OTHER
+}
+
+enum EventScope {
+  LOCAL
+  NATIONAL
+  INTERNATIONAL
+}
+
+enum EventType {
+  CULTURAL
+  PROJECTS
+  ACTIVITIES
+  OTHER
+}
+
+model Member {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug            String    @unique
+  fullName        String
+  photoUrl        String?
+  bio             String?
+  favouriteMemory String?
+  linkedinUrl     String?
+  joinedAt        DateTime  @db.Date
+  leftAt          DateTime? @db.Date
+  isAlumni        Boolean   @default(false)
+  createdAt       DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime  @updatedAt @db.Timestamptz(6)
+
+  statusHistory       StatusHistory[]
+  mandateMemberships  MandateMembership[]
+  buddyLinksAsBuddy   BuddyLink[]         @relation("BuddyRelation")
+  buddyLinksAsNewbie  BuddyLink[]         @relation("NewbieRelation")
+  tributesReceived    Tribute[]           @relation("RecipientRelation")
+  tributesAuthored    Tribute[]           @relation("AuthorRelation")
+  memberBadges        MemberBadge[]
+  eventParticipations EventParticipation[]
+
+  @@map("member")
+}
+
+model StatusHistory {
+  id        String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  memberId  String       @db.Uuid
+  status    MemberStatus
+  startedAt DateTime     @db.Date
+  endedAt   DateTime?    @db.Date
+  createdAt DateTime     @default(now()) @db.Timestamptz(6)
+
+  member Member @relation(fields: [memberId], references: [id])
+
+  @@index([memberId])
+  @@map("status_history")
+}
+
+model Mandate {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String
+  academicYear String
+  startsAt     DateTime  @db.Date
+  endsAt       DateTime? @db.Date
+  photoUrl     String?
+  colorIndex   Int       @default(0)
+  customColor  String?
+  createdAt    DateTime  @default(now()) @db.Timestamptz(6)
+
+  memberships MandateMembership[]
+  milestones  Milestone[]
+  events      Event[]
+
+  @@map("mandate")
+}
+
+model MandateMembership {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  memberId   String   @db.Uuid
+  mandateId  String   @db.Uuid
+  department String
+  roleTitle  String
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+
+  member  Member  @relation(fields: [memberId], references: [id])
+  mandate Mandate @relation(fields: [mandateId], references: [id])
+
+  @@index([memberId])
+  @@index([mandateId])
+  @@map("mandate_membership")
+}
+
+model BuddyLink {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buddyId   String    @db.Uuid
+  newbieId  String    @db.Uuid
+  linkedAt  DateTime? @db.Date
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+
+  buddy  Member @relation("BuddyRelation", fields: [buddyId], references: [id])
+  newbie Member @relation("NewbieRelation", fields: [newbieId], references: [id])
+
+  @@index([buddyId])
+  @@index([newbieId])
+  @@map("buddy_link")
+}
+
+model Tribute {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  authorId    String   @db.Uuid
+  recipientId String   @db.Uuid
+  message     String
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  author    Member @relation("AuthorRelation", fields: [authorId], references: [id])
+  recipient Member @relation("RecipientRelation", fields: [recipientId], references: [id])
+
+  @@index([recipientId])
+  @@map("tribute")
+}
+
+model Milestone {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String
+  description String?
+  happenedAt  DateTime      @db.Date
+  type        MilestoneType
+  mandateId   String?       @db.Uuid
+  createdAt   DateTime      @default(now()) @db.Timestamptz(6)
+
+  mandate Mandate? @relation(fields: [mandateId], references: [id])
+
+  @@map("milestone")
+}
+
+model Badge {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  description String?
+  icon        String?
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  memberBadges MemberBadge[]
+
+  @@map("badge")
+}
+
+model MemberBadge {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  memberId  String   @db.Uuid
+  badgeId   String   @db.Uuid
+  awardedAt DateTime @db.Date
+  awardedBy String?  @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  member Member @relation(fields: [memberId], references: [id])
+  badge  Badge  @relation(fields: [badgeId], references: [id])
+
+  @@index([memberId])
+  @@map("member_badge")
+}
+
+model Event {
+  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title         String
+  description   String?
+  coverPhotoUrl String?
+  locationName  String?
+  scope         EventScope
+  eventType     EventType
+  startsAt      DateTime   @db.Date
+  endsAt        DateTime   @db.Date
+  mandateId     String?    @db.Uuid
+  createdAt     DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime   @updatedAt @db.Timestamptz(6)
+
+  mandate        Mandate?             @relation(fields: [mandateId], references: [id])
+  participations EventParticipation[]
+
+  @@index([mandateId])
+  @@index([scope])
+  @@index([eventType])
+  @@map("event")
+}
+
+model EventParticipation {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  eventId   String   @db.Uuid
+  memberId  String   @db.Uuid
+  role      String
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  event  Event  @relation(fields: [eventId], references: [id])
+  member Member @relation(fields: [memberId], references: [id])
+
+  @@unique([eventId, memberId])
+  @@index([eventId])
+  @@index([memberId])
+  @@map("event_participation")
+}
