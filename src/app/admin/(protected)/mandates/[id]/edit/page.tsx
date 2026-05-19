@@ -1,0 +1,92 @@
+import {notFound} from "next/navigation";
+import Link from "next/link";
+import {prisma} from "@/lib/prisma";
+import {MandateForm} from "@/components/admin/MandateForm";
+import {MandateMembersManager} from "@/components/admin/MandateMembersManager";
+import {DeleteButton} from "@/components/admin/DeleteButton";
+import {deleteMandate} from "@/actions/mandates";
+
+export default async function EditMandatePage({
+                                                  params,
+                                              }: {
+    params: Promise<{ id: string }>;
+}) {
+    const {id} = await params;
+
+    const [mandate, allMembers] = await Promise.all([
+        prisma.mandate.findUnique({
+            where: {id},
+            include: {
+                memberships: {
+                    include: {
+                        member: {select: {id: true, fullName: true}},
+                    },
+                    orderBy: {department: "asc"},
+                },
+            },
+        }),
+        prisma.member.findMany({
+            orderBy: {fullName: "asc"},
+            select: {id: true, fullName: true},
+        }),
+    ]);
+
+    if (!mandate) notFound();
+
+    return (
+        <div>
+            <Link
+                href="/admin/mandates"
+                className="text-[11px] font-semibold tracking-[0.08em] uppercase text-[var(--text-4)] no-underline hover:text-[var(--text-2)] transition-colors mb-6 inline-block"
+            >
+                ← Mandates
+            </Link>
+
+            <div className="flex items-start justify-between gap-4 mb-8 mt-2">
+                <h1 className="text-[28px] font-bold text-[var(--text-1)] tracking-[-0.02em] leading-none">
+                    {mandate.name}
+                </h1>
+                <DeleteButton
+                    confirmText={`Permanently delete "${mandate.name}"? This will also remove all memberships and milestones linked to it.`}
+                    redirectTo="/admin/mandates"
+                    action={deleteMandate.bind(null, mandate.id)}
+                />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+                <section>
+                    <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--text-4)] mb-6">
+                        Mandate details
+                    </p>
+                    <MandateForm
+                        mode="edit"
+                        mandateId={mandate.id}
+                        defaultValues={{
+                            name: mandate.name,
+                            academicYear: mandate.academicYear,
+                            startsAt: mandate.startsAt.toISOString(),
+                            endsAt: mandate.endsAt?.toISOString(),
+                            photoUrl: mandate.photoUrl ?? "",
+                            colorIndex: mandate.colorIndex,
+                            customColor: mandate.customColor ?? "",
+                        }}
+                    />
+                </section>
+
+                <section>
+                    <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--text-4)] mb-6">
+                        Team{" "}
+                        <span className="font-normal normal-case tracking-normal text-[var(--text-4)]">
+              ({mandate.memberships.length})
+            </span>
+                    </p>
+                    <MandateMembersManager
+                        mandateId={mandate.id}
+                        memberships={mandate.memberships}
+                        allMembers={allMembers}
+                    />
+                </section>
+            </div>
+        </div>
+    );
+}
