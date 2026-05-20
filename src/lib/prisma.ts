@@ -3,7 +3,11 @@ import { PrismaPg } from "@prisma/adapter-pg";
 
 function createPrismaClient() {
   const connectionString = process.env.DATABASE_URL!;
-  const adapter = new PrismaPg({ connectionString, ssl: { rejectUnauthorized: false } });
+  const adapter = new PrismaPg({
+    connectionString,
+    ssl: { rejectUnauthorized: false },
+    max: 1,
+  });
   return new PrismaClient({ adapter } as never);
 }
 

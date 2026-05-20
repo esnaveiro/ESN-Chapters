@@ -1,12 +1,14 @@
 "use client";
 
-import {useMemo, useState} from "react";
+import {useMemo, useState, useTransition} from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {Search} from "lucide-react";
 import {MemberStatus} from "@/generated/prisma/enums";
 import {StatusBadge} from "@/components/ui/Badge";
 import {STATUS_LABELS} from "@/lib/utils";
+import {deleteMembers} from "@/actions/members";
+import {Checkbox} from "@/components/ui/Checkbox";
 
 type Member = {
     id: string;
@@ -22,6 +24,9 @@ const ALL_STATUSES = Object.values(MemberStatus);
 export function MembersRoster({members}: { members: Member[] }) {
     const [query, setQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState<MemberStatus | "ALL">("ALL");
+    const [selected, setSelected] = useState<Set<string>>(new Set());
+    const [confirmDelete, setConfirmDelete] = useState(false);
+    const [isPending, startTransition] = useTransition();
 
     const counts = useMemo(() => {
         const c: Record<string, number> = {ALL: members.length};
@@ -44,11 +49,48 @@ export function MembersRoster({members}: { members: Member[] }) {
         });
     }, [members, query, statusFilter]);
 
+    const allFilteredSelected = filtered.length > 0 && filtered.every((m) => selected.has(m.id));
+    const someFilteredSelected = filtered.some((m) => selected.has(m.id));
+
+    function toggleAll() {
+        if (allFilteredSelected) {
+            setSelected((prev) => {
+                const next = new Set(prev);
+                filtered.forEach((m) => next.delete(m.id));
+                return next;
+            });
+        } else {
+            setSelected((prev) => {
+                const next = new Set(prev);
+                filtered.forEach((m) => next.add(m.id));
+                return next;
+            });
+        }
+        setConfirmDelete(false);
+    }
+
+    function toggle(id: string) {
+        setSelected((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id); else next.add(id);
+            return next;
+        });
+        setConfirmDelete(false);
+    }
+
+    function handleBulkDelete() {
+        if (!confirmDelete) { setConfirmDelete(true); return; }
+        startTransition(async () => {
+            await deleteMembers([...selected]);
+            setSelected(new Set());
+            setConfirmDelete(false);
+        });
+    }
+
     return (
         <div>
             {/* Status filter + search */}
             <div className="flex flex-wrap items-center gap-3 mb-7">
-                {/* Filter pills */}
                 <div className="flex flex-wrap gap-1.5">
                     {[{key: "ALL" as const, label: "All"}, ...ALL_STATUSES.map((s) => ({
                         key: s,
@@ -70,22 +112,17 @@ export function MembersRoster({members}: { members: Member[] }) {
                                     ].join(" ")}
                                 >
                                     {label}
-                                    <span
-                                        className={active ? "opacity-50 text-[11px]" : "text-[11px] text-[var(--text-4)]"}>
-                    {count}
-                  </span>
+                                    <span className={active ? "opacity-50 text-[11px]" : "text-[11px] text-[var(--text-4)]"}>
+                                        {count}
+                                    </span>
                                 </button>
                             );
                         },
                     )}
                 </div>
 
-                {/* Search */}
                 <div className="relative ml-auto">
-                    <Search
-                        size={13}
-                        className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-4)] pointer-events-none"
-                    />
+                    <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-4)] pointer-events-none"/>
                     <input
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
@@ -100,53 +137,79 @@ export function MembersRoster({members}: { members: Member[] }) {
                 <p className="text-[13px] text-[var(--text-4)] py-6">No members found.</p>
             ) : (
                 <div>
-                    {filtered.map((member, i) => {
+                    {/* Select-all header */}
+                    <div className="flex items-center gap-4 py-2 border-b border-[var(--border)] mb-1">
+                        <Checkbox
+                            checked={allFilteredSelected ? true : someFilteredSelected ? "indeterminate" : false}
+                            onCheckedChange={toggleAll}
+                        />
+                        <span className="text-[11px] text-[var(--text-4)]">
+                            {selected.size > 0 ? `${selected.size} selected` : "Select all"}
+                        </span>
+                    </div>
+
+                    {filtered.map((member) => {
                         const status = member.statusHistory[0]?.status ?? "NEWBIE";
+                        const isChecked = selected.has(member.id);
                         return (
                             <div
                                 key={member.id}
-                                className="flex items-center gap-4 py-3 border-b border-[var(--border)] last:border-0"
+                                className={[
+                                    "flex items-center gap-4 py-3 border-b border-[var(--border)] last:border-0",
+                                    "-mx-2 px-2 transition-colors",
+                                    isChecked ? "bg-[var(--surface-raised)]" : "",
+                                ].join(" ")}
                             >
-                <span className="text-[11px] tabular-nums text-[var(--text-4)] w-7 shrink-0">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                                <div
-                                    className="w-7 h-7 rounded-full bg-[var(--surface-raised)] flex items-center justify-center text-[11px] font-semibold text-[var(--text-3)] shrink-0 overflow-hidden">
+                                <Checkbox checked={isChecked} onCheckedChange={() => toggle(member.id)}/>
+                                <div className="w-7 h-7 rounded-full bg-[var(--surface-raised)] flex items-center justify-center text-[11px] font-semibold text-[var(--text-3)] shrink-0 overflow-hidden">
                                     {member.photoUrl ? (
-                                        <Image src={member.photoUrl} alt={member.fullName} width={28} height={28}
-                                               className="w-full h-full object-cover"/>
+                                        <Image src={member.photoUrl} alt={member.fullName} width={28} height={28} className="w-full h-full object-cover"/>
                                     ) : (
                                         member.fullName.charAt(0)
                                     )}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-[13px] font-semibold text-[var(--text-1)] truncate">
-                                        {member.fullName}
-                                    </p>
+                                    <p className="text-[13px] font-semibold text-[var(--text-1)] truncate">{member.fullName}</p>
                                     <p className="text-[11px] text-[var(--text-4)]">{member.slug}</p>
                                 </div>
                                 <StatusBadge status={status}/>
                                 <span className="text-[11px] tabular-nums text-[var(--text-4)] shrink-0">
-                  {new Date(member.joinedAt).getFullYear()}
-                </span>
+                                    {new Date(member.joinedAt).getFullYear()}
+                                </span>
                                 <div className="flex items-center gap-3 shrink-0">
-                                    <Link
-                                        href={`/admin/members/${member.id}/edit`}
-                                        className="text-[11px] text-[var(--text-3)] hover:text-[var(--text-1)] no-underline transition-colors"
-                                    >
+                                    <Link href={`/admin/members/${member.id}/edit`} className="text-[11px] text-[var(--text-3)] hover:text-[var(--text-1)] no-underline transition-colors">
                                         Edit
                                     </Link>
-                                    <Link
-                                        href={`/members/${member.slug}`}
-                                        target="_blank"
-                                        className="text-[11px] text-[var(--text-4)] hover:text-[var(--text-1)] no-underline transition-colors"
-                                    >
+                                    <Link href={`/members/${member.slug}`} target="_blank" className="text-[11px] text-[var(--text-4)] hover:text-[var(--text-1)] no-underline transition-colors">
                                         View
                                     </Link>
                                 </div>
                             </div>
                         );
                     })}
+                </div>
+            )}
+
+            {/* Bulk action bar */}
+            {selected.size > 0 && (
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2.5 rounded-[var(--radius-lg)] bg-[var(--text-1)] text-white shadow-lg text-[13px]">
+                    <span className="font-medium">{selected.size} selected</span>
+                    <span className="opacity-30">·</span>
+                    <button
+                        onClick={handleBulkDelete}
+                        disabled={isPending}
+                        className={[
+                            "font-medium transition-colors",
+                            confirmDelete ? "text-red-400 hover:text-red-300" : "text-[var(--accent-light)] hover:opacity-80",
+                        ].join(" ")}
+                    >
+                        {isPending ? "Deleting…" : confirmDelete ? `Confirm delete ${selected.size}` : "Delete"}
+                    </button>
+                    {confirmDelete && (
+                        <button onClick={() => setConfirmDelete(false)} className="opacity-50 hover:opacity-80 transition-opacity text-[12px]">
+                            Cancel
+                        </button>
+                    )}
                 </div>
             )}
         </div>

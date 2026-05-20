@@ -84,3 +84,15 @@ export async function deleteMilestone(id: string): Promise<ActionResult> {
         return {success: false, error: String(e)};
     }
 }
+
+export async function deleteMilestones(ids: string[]): Promise<ActionResult> {
+    try {
+        await requireAuth();
+        await prisma.milestone.deleteMany({where: {id: {in: ids}}});
+        revalidatePath("/timeline");
+        revalidatePath("/admin/milestones");
+        return {success: true, data: undefined};
+    } catch (e) {
+        return {success: false, error: String(e)};
+    }
+}

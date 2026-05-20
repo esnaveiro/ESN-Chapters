@@ -88,6 +88,17 @@ export async function deleteBadge(id: string): Promise<ActionResult> {
     }
 }
 
+export async function deleteBadges(ids: string[]): Promise<ActionResult> {
+    try {
+        await requireAuth();
+        await prisma.badge.deleteMany({where: {id: {in: ids}}});
+        revalidatePath("/admin/badges");
+        return {success: true, data: undefined};
+    } catch (e) {
+        return {success: false, error: String(e)};
+    }
+}
+
 export async function revokeBadge(memberBadgeId: string, memberSlug: string): Promise<ActionResult> {
     try {
         await requireAuth();
