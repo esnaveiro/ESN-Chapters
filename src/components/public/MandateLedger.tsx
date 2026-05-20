@@ -48,10 +48,10 @@ export function MandateLedger({mandates}: { mandates: Mandate[] }) {
 
     const isMobile = windowW < 1024;
 
-    // Scale tab dimensions to fit available screen width
-    const availableW = windowW - (isMobile ? 24 : 32);
+    // Scale tab dimensions to fit available screen width (desktop only)
+    const availableW = windowW - 32;
     const desktopTotal = INITIAL_OFFSET + Math.max(0, n - 1) * TAB_STEP + TAB_W;
-    const scale = isMobile && desktopTotal > availableW ? availableW / desktopTotal : 1;
+    const scale = desktopTotal > availableW ? availableW / desktopTotal : 1;
     const dynTabW = Math.max(80, Math.floor(TAB_W * scale));
     const dynTabStep = Math.max(16, Math.floor(TAB_STEP * scale));
 
@@ -61,7 +61,7 @@ export function MandateLedger({mandates}: { mandates: Mandate[] }) {
             style={{
                 display: "grid",
                 gridTemplateColumns: isMobile ? "1fr" : "260px 1fr",
-                gap: isMobile ? 0 : "clamp(32px, 5vw, 80px)",
+                gap: "clamp(32px, 5vw, 80px)",
             }}
         >
             {/* ── Info panel (desktop only) ─────────────────────────── */}
@@ -133,153 +133,219 @@ export function MandateLedger({mandates}: { mandates: Mandate[] }) {
                 </div>
             )}
 
-            {/* ── Folder stack ─────────────────────────────────────── */}
-            <div
-                className="no-scrollbar"
-                style={{scrollbarWidth: "none", height: "100%", overflowY: isMobile ? "hidden" : "auto"}}
-            >
-                <div style={{
-                    minHeight: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "flex-end",
-                    paddingBottom: isMobile ? 0 : "5rem",
-                }}>
+            {/* ── Mobile list / Desktop folder stack ───────────────── */}
+            {isMobile ? (
+                <div style={{borderTop: "1px solid var(--border)"}}>
                     {mandates.map((m, i) => {
                         const color = getMandateColor(m.colorIndex ?? i, m.customColor);
-                        const prevColor = i > 0
-                            ? getMandateColor(mandates[i - 1].colorIndex ?? i - 1, mandates[i - 1].customColor)
-                            : null;
                         const isOpen = openId === m.id;
-                        const isLast = i === mandates.length - 1;
-
                         return (
-                            <div
-                                key={m.id}
-                                className="relative select-none"
-                                style={{
-                                    paddingTop: TAB_H,
-                                    marginTop: i === 0 ? 0 : -TAB_OVERLAP,
-                                    zIndex: i + 1,
-                                    cursor: "pointer",
-                                }}
-                                onMouseEnter={!isMobile ? () => setOpenId(m.id) : undefined}
-                                onClick={
-                                    isMobile
-                                        ? (isOpen
-                                            ? () => { window.location.href = `/mandates/${m.id}`; }
-                                            : () => setOpenId(m.id))
-                                        : () => { window.location.href = `/mandates/${m.id}`; }
-                                }
-                            >
-                                {prevColor && (
-                                    <>
-                                        <div className="absolute inset-x-0 top-0"
-                                             style={{height: TAB_H, background: prevColor}}/>
-                                        <div className="absolute"
-                                             style={{left: 0, top: TAB_H, width: 12, height: 12, background: prevColor}}/>
-                                        <div className="absolute"
-                                             style={{right: 0, top: TAB_H, width: 12, height: 12, background: prevColor}}/>
-                                    </>
-                                )}
-
-                                {/* Tab */}
+                            <div key={m.id} style={{borderBottom: "1px solid var(--border)"}}>
+                                {/* Row header */}
                                 <div
-                                    className="absolute top-0 flex items-center justify-center"
+                                    onClick={() => setOpenId(isOpen ? "" : m.id)}
                                     style={{
-                                        left: i * dynTabStep + INITIAL_OFFSET,
-                                        width: dynTabW,
-                                        height: TAB_H,
-                                        background: color,
-                                        clipPath: tabClipPath(dynTabW),
+                                        display: "flex", alignItems: "center", gap: 14,
+                                        padding: "14px 16px", cursor: "pointer", userSelect: "none",
                                     }}
                                 >
-                                    <span
-                                        className="text-white font-semibold uppercase truncate px-3"
-                                        style={{fontSize: 11, letterSpacing: "0.14em", maxWidth: dynTabW - 24}}
-                                    >
-                                        {m.academicYear}
-                                    </span>
+                                    <div style={{width: 4, borderRadius: 2, alignSelf: "stretch", background: color, flexShrink: 0}}/>
+                                    <div style={{flex: 1, minWidth: 0}}>
+                                        <p style={{fontSize: 10, fontWeight: 700, color, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 2}}>
+                                            {m.academicYear}
+                                        </p>
+                                        <p style={{fontSize: 15, fontWeight: 700, color: "var(--text-1)", letterSpacing: "-0.01em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"}}>
+                                            {m.name}
+                                        </p>
+                                        <p style={{fontSize: 11, color: "var(--text-4)", marginTop: 2}}>
+                                            {m._count.memberships} members · {m._count.events} events
+                                        </p>
+                                    </div>
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--text-4)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+                                         style={{flexShrink: 0, transform: isOpen ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.22s ease"}}>
+                                        <path d="M6 4l4 4-4 4"/>
+                                    </svg>
                                 </div>
 
-                                {/* Folder body */}
-                                <div
-                                    style={{
-                                        position: "relative",
-                                        zIndex: 1,
-                                        marginTop: -1,
-                                        height: isOpen ? BODY_OPEN : CLOSED_H,
-                                        transition: "height 0.44s cubic-bezier(0.16, 1, 0.3, 1)",
-                                        background: color,
-                                        borderRadius: isMobile && isLast ? "12px 12px 0 0" : 12,
-                                        overflow: "hidden",
-                                    }}
-                                >
-                                    <div style={{opacity: isOpen ? 1 : 0, transition: "opacity 0.25s 0.1s"}}>
-                                        <div className="flex items-center gap-5 px-7 h-16">
-                                            <span className="font-semibold text-white flex-1 truncate"
-                                                  style={{fontSize: 16}}>
-                                                {m.name}
-                                            </span>
-                                            <span className="text-white/55 tabular-nums whitespace-nowrap"
-                                                  style={{fontSize: 13}}>
-                                                {m._count.memberships} members · {m._count.events} events
-                                            </span>
-                                        </div>
-
-                                        <div className="px-7 pb-7">
-                                            {m.photoUrl ? (
-                                                <div className="relative overflow-hidden mb-5"
-                                                     style={{borderRadius: 10, height: 190}}>
-                                                    <Image src={m.photoUrl} alt={m.name} fill
-                                                           className="object-cover"
-                                                           style={{objectPosition: `${m.photoFocusX}% ${m.photoFocusY}%`}}/>
-                                                    <div className="absolute inset-0"
-                                                         style={{background: "rgba(0,0,0,0.12)"}}/>
-                                                </div>
-                                            ) : (
-                                                <div className="mb-5 flex items-center justify-center"
-                                                     style={{height: 190, borderRadius: 10, background: "rgba(255,255,255,0.1)"}}>
-                                                    <span className="text-white/25 text-sm">No photo</span>
-                                                </div>
-                                            )}
-
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex gap-8">
-                                                    <div>
-                                                        <p className="text-white/45 text-xs uppercase tracking-wider mb-0.5">Members</p>
-                                                        <p className="text-white font-bold tabular-nums"
-                                                           style={{fontSize: "1.6rem", letterSpacing: "-0.03em"}}>
-                                                            {m._count.memberships}
-                                                        </p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-white/45 text-xs uppercase tracking-wider mb-0.5">Events</p>
-                                                        <p className="text-white font-bold tabular-nums"
-                                                           style={{fontSize: "1.6rem", letterSpacing: "-0.03em"}}>
-                                                            {m._count.events}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <Link
-                                                    href={`/mandates/${m.id}`}
-                                                    className="text-sm font-semibold px-5 py-2.5 rounded-xl"
-                                                    style={{background: "rgba(255,255,255,0.2)", color: "white"}}
-                                                    onMouseOver={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.28)")}
-                                                    onMouseOut={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.2)")}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                >
-                                                    View mandate
-                                                </Link>
+                                {/* Expanded content */}
+                                {isOpen && (
+                                    <div style={{padding: "0 16px 20px", paddingLeft: 34}}>
+                                        {m.photoUrl ? (
+                                            <div className="relative overflow-hidden mb-4"
+                                                 style={{borderRadius: 10, height: 160}}>
+                                                <Image src={m.photoUrl} alt={m.name} fill className="object-cover"
+                                                       style={{objectPosition: `${m.photoFocusX}% ${m.photoFocusY}%`}}/>
+                                            </div>
+                                        ) : null}
+                                        <div style={{display: "flex", gap: 24, marginBottom: 16}}>
+                                            <div>
+                                                <p style={{fontSize: 10, color: "var(--text-4)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 2}}>Members</p>
+                                                <p style={{fontSize: "1.6rem", fontWeight: 800, color, letterSpacing: "-0.04em", lineHeight: 1}}>{m._count.memberships}</p>
+                                            </div>
+                                            <div>
+                                                <p style={{fontSize: 10, color: "var(--text-4)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 2}}>Events</p>
+                                                <p style={{fontSize: "1.6rem", fontWeight: 800, color, letterSpacing: "-0.04em", lineHeight: 1}}>{m._count.events}</p>
                                             </div>
                                         </div>
+                                        <Link
+                                            href={`/mandates/${m.id}`}
+                                            style={{display: "inline-flex", alignItems: "center", gap: 4, fontSize: 14, fontWeight: 600, color}}
+                                        >
+                                            View mandate →
+                                        </Link>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         );
                     })}
                 </div>
-            </div>
+            ) : (
+                <div
+                    className="no-scrollbar"
+                    style={{scrollbarWidth: "none", height: "100%", overflowY: "auto"}}
+                >
+                    <div style={{
+                        minHeight: "100%",
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "flex-end",
+                        paddingBottom: "5rem",
+                    }}>
+                        {mandates.map((m, i) => {
+                            const color = getMandateColor(m.colorIndex ?? i, m.customColor);
+                            const prevColor = i > 0
+                                ? getMandateColor(mandates[i - 1].colorIndex ?? i - 1, mandates[i - 1].customColor)
+                                : null;
+                            const isOpen = openId === m.id;
+
+                            return (
+                                <div
+                                    key={m.id}
+                                    className="relative select-none"
+                                    style={{
+                                        paddingTop: TAB_H,
+                                        marginTop: i === 0 ? 0 : -TAB_OVERLAP,
+                                        zIndex: i + 1,
+                                        cursor: "pointer",
+                                    }}
+                                    onMouseEnter={() => setOpenId(m.id)}
+                                    onClick={() => { window.location.href = `/mandates/${m.id}`; }}
+                                >
+                                    {prevColor && (
+                                        <>
+                                            <div className="absolute inset-x-0 top-0"
+                                                 style={{height: TAB_H, background: prevColor}}/>
+                                            <div className="absolute"
+                                                 style={{left: 0, top: TAB_H, width: 12, height: 12, background: prevColor}}/>
+                                            <div className="absolute"
+                                                 style={{right: 0, top: TAB_H, width: 12, height: 12, background: prevColor}}/>
+                                        </>
+                                    )}
+
+                                    {/* Tab */}
+                                    <div
+                                        className="absolute top-0 flex items-center justify-center"
+                                        style={{
+                                            left: i * dynTabStep + INITIAL_OFFSET,
+                                            width: dynTabW,
+                                            height: TAB_H,
+                                            background: color,
+                                            clipPath: tabClipPath(dynTabW),
+                                        }}
+                                    >
+                                        <span
+                                            className="text-white font-semibold uppercase truncate px-3"
+                                            style={{fontSize: 11, letterSpacing: "0.14em", maxWidth: dynTabW - 24}}
+                                        >
+                                            {m.academicYear}
+                                        </span>
+                                    </div>
+
+                                    {/* Folder body */}
+                                    <div
+                                        style={{
+                                            position: "relative",
+                                            zIndex: 1,
+                                            marginTop: -1,
+                                            height: isOpen ? BODY_OPEN : CLOSED_H,
+                                            transition: "height 0.44s cubic-bezier(0.16, 1, 0.3, 1)",
+                                            background: color,
+                                            borderRadius: 12,
+                                            overflow: "hidden",
+                                        }}
+                                    >
+                                        <div style={{opacity: isOpen ? 1 : 0, transition: "opacity 0.25s 0.1s"}}>
+                                            <div className="flex items-center gap-5 px-7 h-16">
+                                                <span className="font-semibold text-white flex-1 truncate" style={{fontSize: 16}}>
+                                                    {m.name}
+                                                </span>
+                                                <span className="text-white/55 tabular-nums whitespace-nowrap" style={{fontSize: 13}}>
+                                                    {m._count.memberships} members · {m._count.events} events
+                                                </span>
+                                                <Link
+                                                    href={`/mandates/${m.id}`}
+                                                    className="ml-2 text-white/75 hover:text-white transition-colors shrink-0 font-medium"
+                                                    style={{fontSize: 13}}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    Open →
+                                                </Link>
+                                            </div>
+
+                                            <div className="px-7 pb-7">
+                                                {m.photoUrl ? (
+                                                    <div className="relative overflow-hidden mb-5"
+                                                         style={{borderRadius: 10, height: 190}}>
+                                                        <Image src={m.photoUrl} alt={m.name} fill
+                                                               className="object-cover"
+                                                               style={{objectPosition: `${m.photoFocusX}% ${m.photoFocusY}%`}}/>
+                                                        <div className="absolute inset-0"
+                                                             style={{background: "rgba(0,0,0,0.12)"}}/>
+                                                    </div>
+                                                ) : (
+                                                    <div className="mb-5 flex items-center justify-center"
+                                                         style={{height: 190, borderRadius: 10, background: "rgba(255,255,255,0.1)"}}>
+                                                        <span className="text-white/25 text-sm">No photo</span>
+                                                    </div>
+                                                )}
+
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex gap-8">
+                                                        <div>
+                                                            <p className="text-white/45 text-xs uppercase tracking-wider mb-0.5">Members</p>
+                                                            <p className="text-white font-bold tabular-nums"
+                                                               style={{fontSize: "1.6rem", letterSpacing: "-0.03em"}}>
+                                                                {m._count.memberships}
+                                                            </p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-white/45 text-xs uppercase tracking-wider mb-0.5">Events</p>
+                                                            <p className="text-white font-bold tabular-nums"
+                                                               style={{fontSize: "1.6rem", letterSpacing: "-0.03em"}}>
+                                                                {m._count.events}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <Link
+                                                        href={`/mandates/${m.id}`}
+                                                        className="text-sm font-semibold px-5 py-2.5 rounded-xl"
+                                                        style={{background: "rgba(255,255,255,0.2)", color: "white"}}
+                                                        onMouseOver={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.28)")}
+                                                        onMouseOut={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.2)")}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        View mandate
+                                                    </Link>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
