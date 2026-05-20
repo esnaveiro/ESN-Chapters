@@ -1,7 +1,7 @@
 import Link from "next/link";
 import {prisma} from "@/lib/prisma";
 import {Button} from "@/components/ui/Button";
-import {getMandateColor} from "@/lib/utils";
+import {MandatesManager} from "@/components/admin/MandatesManager";
 
 export default async function AdminMandatesPage() {
     const mandates = await prisma.mandate.findMany({
@@ -39,45 +39,7 @@ export default async function AdminMandatesPage() {
                 ))}
             </div>
 
-            {mandates.length === 0 ? (
-                <p className="text-[13px] text-[var(--text-4)] py-10">No mandates yet.</p>
-            ) : (
-                <div>
-                    {mandates.map((mandate, i) => {
-                        const color = getMandateColor(mandate.colorIndex, mandate.customColor);
-                        return (
-                            <div
-                                key={mandate.id}
-                                className="flex items-center gap-4 py-4 border-b border-[var(--border)] last:border-0"
-                            >
-                <span className="text-[11px] tabular-nums text-[var(--text-4)] w-7 shrink-0">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                                <div className="w-2 h-2 rounded-full shrink-0" style={{background: color}}/>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-[11px] tabular-nums font-medium text-[var(--text-4)] leading-none mb-0.5">
-                                        {mandate.academicYear}
-                                    </p>
-                                    <p className="text-[14px] font-semibold text-[var(--text-1)] truncate">
-                                        {mandate.name}
-                                    </p>
-                                </div>
-                                <p className="text-[11px] text-[var(--text-4)] shrink-0">
-                                    {mandate._count.memberships} vol.
-                                    <span className="mx-1.5 text-[var(--border-strong)]">·</span>
-                                    {mandate._count.events} events
-                                </p>
-                                <Link
-                                    href={`/admin/mandates/${mandate.id}/edit`}
-                                    className="text-[11px] text-[var(--text-3)] hover:text-[var(--text-1)] no-underline transition-colors shrink-0"
-                                >
-                                    Edit
-                                </Link>
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
+            <MandatesManager mandates={mandates} />
         </div>
     );
 }

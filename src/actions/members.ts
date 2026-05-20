@@ -259,6 +259,18 @@ export async function deleteMember(id: string): Promise<ActionResult> {
     }
 }
 
+export async function deleteMembers(ids: string[]): Promise<ActionResult> {
+    try {
+        await requireAuth();
+        await prisma.member.deleteMany({where: {id: {in: ids}}});
+        revalidatePath("/members");
+        revalidatePath("/admin/members");
+        return {success: true, data: undefined};
+    } catch (e) {
+        return {success: false, error: String(e)};
+    }
+}
+
 export async function addTribute(
     authorId: string,
     recipientId: string,

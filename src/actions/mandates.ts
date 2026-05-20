@@ -91,6 +91,19 @@ export async function deleteMandate(id: string): Promise<ActionResult> {
     }
 }
 
+export async function deleteMandates(ids: string[]): Promise<ActionResult> {
+    try {
+        await requireAuth();
+        await prisma.mandate.deleteMany({where: {id: {in: ids}}});
+        revalidatePath("/mandates");
+        revalidatePath("/admin/mandates");
+        revalidatePath("/");
+        return {success: true, data: undefined};
+    } catch (e) {
+        return {success: false, error: String(e)};
+    }
+}
+
 export async function addMemberToMandate(
     mandateId: string,
     memberId: string,
