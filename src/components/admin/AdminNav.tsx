@@ -105,23 +105,29 @@ export function AdminNav({email}: { email: string }) {
 
             {/* ── Mobile bottom nav ─────────────────────────────── */}
             <nav
-                className="md:hidden fixed bottom-0 inset-x-0 z-50 h-14 flex items-center border-t border-[var(--border)]"
-                style={{background: "rgba(255,255,255,0.96)", backdropFilter: "blur(12px)"}}
+                className="md:hidden fixed bottom-0 inset-x-0 z-50 border-t border-[var(--border)]"
+                style={{
+                    background: "rgba(255,255,255,0.96)",
+                    backdropFilter: "blur(12px)",
+                    paddingBottom: "env(safe-area-inset-bottom)",
+                }}
             >
-                {MOBILE_NAV_ITEMS.map(({href, label, icon: Icon, exact}) => {
-                    const active = exact ? pathname === href : pathname.startsWith(href);
-                    return (
-                        <Link
-                            key={href}
-                            href={href}
-                            className="flex-1 flex flex-col items-center gap-0.5 py-2 no-underline"
-                            style={{color: active ? "var(--accent)" : "var(--text-3)"}}
-                        >
-                            <Icon size={20} strokeWidth={active ? 2.2 : 1.8}/>
-                            <span className="text-[10px] font-medium">{label}</span>
-                        </Link>
-                    );
-                })}
+                <div className="h-14 flex items-center">
+                    {MOBILE_NAV_ITEMS.map(({href, label, icon: Icon, exact}) => {
+                        const active = exact ? pathname === href : pathname.startsWith(href);
+                        return (
+                            <Link
+                                key={href}
+                                href={href}
+                                className="flex-1 flex flex-col items-center gap-0.5 py-2 no-underline"
+                                style={{color: active ? "var(--accent)" : "var(--text-3)"}}
+                            >
+                                <Icon size={20} strokeWidth={active ? 2.2 : 1.8}/>
+                                <span className="text-[10px] font-medium">{label}</span>
+                            </Link>
+                        );
+                    })}
+                </div>
             </nav>
         </>
     );
