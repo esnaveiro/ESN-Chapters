@@ -90,7 +90,7 @@ export async function createMember(
 
         revalidatePath("/members");
         revalidatePath("/admin/members");
-        if (data.buddyId || data.newbieIds?.length) revalidatePath("/graph");
+        if (data.buddyId || data.newbieIds?.length) revalidatePath("/network");
         return {success: true, data: {id: member.id, slug: member.slug}};
     } catch (e) {
         return {success: false, error: String(e)};
@@ -215,7 +215,7 @@ export async function removeBuddyLink(newbieId: string): Promise<ActionResult> {
     try {
         await requireAuth();
         await prisma.buddyLink.deleteMany({where: {newbieId}});
-        revalidatePath("/graph");
+        revalidatePath("/network");
         return {success: true, data: undefined};
     } catch (e) {
         return {success: false, error: String(e)};
@@ -238,7 +238,7 @@ export async function setBuddyLink(
             return {success: false, error: "This member already has a buddy"};
 
         await prisma.buddyLink.create({data: {buddyId, newbieId}});
-        revalidatePath("/graph");
+        revalidatePath("/network");
         return {success: true, data: undefined};
     } catch (e) {
         return {success: false, error: String(e)};

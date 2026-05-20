@@ -15,7 +15,7 @@ const CLIP = "path('M 0 42 L 10 7 Q 12 0 19 0 L 139 0 Q 146 0 148 7 L 158 42 Z')
 const NAV_FOLDERS = [
     {href: "/members", label: "Members", color: "#ec008c"},
     {href: "/mandates", label: "Mandates", color: "#00aeef"},
-    {href: "/graph", label: "Network", color: "#7ac143"},
+    {href: "/network", label: "Network", color: "#7ac143"},
 ] as const;
 
 type MemberPreview = {

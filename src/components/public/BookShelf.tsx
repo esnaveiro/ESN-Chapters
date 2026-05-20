@@ -3,7 +3,7 @@ import Link from "next/link";
 const BOOKS = [
     {href: "/members", label: "Members", color: "#ec008c", width: 52, height: 196, rotate: -2.5},
     {href: "/mandates", label: "Mandates", color: "#00aeef", width: 48, height: 172, rotate: 0.8},
-    {href: "/graph", label: "Network", color: "#7ac143", width: 42, height: 184, rotate: -1.2},
+    {href: "/network", label: "Network", color: "#7ac143", width: 42, height: 184, rotate: -1.2},
 ] as const;
 
 export function BookShelf() {

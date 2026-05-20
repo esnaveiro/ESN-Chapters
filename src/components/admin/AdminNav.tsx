@@ -16,9 +16,7 @@ const NAV_ITEMS: { href: string; label: string; icon: LucideIcon; exact?: boolea
     {href: "/admin/settings", label: "Settings", icon: Settings},
 ];
 
-const MOBILE_NAV_ITEMS = NAV_ITEMS.filter(item =>
-    ["/admin", "/admin/members", "/admin/mandates", "/admin/milestones", "/admin/settings"].includes(item.href)
-);
+const MOBILE_NAV_ITEMS = NAV_ITEMS.filter(item => item.href !== "/admin/tributes");
 
 export function AdminNav({email}: { email: string }) {
     const pathname = usePathname();
@@ -90,6 +88,19 @@ export function AdminNav({email}: { email: string }) {
                     {NAV_TITLE_REST && <span> {NAV_TITLE_REST}</span>}
                 </Link>
                 <span className="ml-2 text-[10px] font-semibold tracking-[0.12em] uppercase text-[var(--text-4)]">Admin</span>
+                <form action="/admin/logout" method="post" className="ml-auto">
+                    <button
+                        type="submit"
+                        className="p-2 text-[var(--text-4)] hover:text-[var(--text-2)] transition-colors"
+                        aria-label="Sign out"
+                    >
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>
+                            <path d="M10 11l3-3-3-3"/>
+                            <line x1="13" y1="8" x2="6" y2="8"/>
+                        </svg>
+                    </button>
+                </form>
             </header>
 
             {/* ── Mobile bottom nav ─────────────────────────────── */}
