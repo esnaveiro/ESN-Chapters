@@ -274,7 +274,8 @@ export async function deleteMembers(ids: string[]): Promise<ActionResult> {
 export async function addTribute(
     authorId: string,
     recipientId: string,
-    message: string
+    message: string,
+    date?: string,
 ): Promise<ActionResult> {
     try {
         await requireAuth();
@@ -282,7 +283,12 @@ export async function addTribute(
             return {success: false, error: "Message too long (max 500 characters)"};
 
         await prisma.tribute.create({
-            data: {authorId, recipientId, message},
+            data: {
+                authorId,
+                recipientId,
+                message,
+                ...(date ? {createdAt: new Date(date)} : {}),
+            },
         });
 
         const recipient = await prisma.member.findUnique({
@@ -290,6 +296,34 @@ export async function addTribute(
             select: {slug: true},
         });
         revalidatePath(`/members/${recipient?.slug}`);
+        revalidatePath(`/admin/members/${recipientId}/edit`);
+        return {success: true, data: undefined};
+    } catch (e) {
+        return {success: false, error: String(e)};
+    }
+}
+
+export async function deleteTributes(ids: string[]): Promise<ActionResult> {
+    try {
+        await requireAuth();
+        await prisma.tribute.deleteMany({where: {id: {in: ids}}});
+        revalidatePath("/admin/tributes");
+        return {success: true, data: undefined};
+    } catch (e) {
+        return {success: false, error: String(e)};
+    }
+}
+
+export async function deleteTribute(tributeId: string, recipientId: string): Promise<ActionResult> {
+    try {
+        await requireAuth();
+        const tribute = await prisma.tribute.findUnique({
+            where: {id: tributeId},
+            include: {recipient: {select: {slug: true}}},
+        });
+        await prisma.tribute.delete({where: {id: tributeId}});
+        revalidatePath(`/members/${tribute?.recipient.slug}`);
+        revalidatePath(`/admin/members/${recipientId}/edit`);
         return {success: true, data: undefined};
     } catch (e) {
         return {success: false, error: String(e)};

@@ -51,7 +51,10 @@ CREATE TABLE "mandate"
     "startsAt"     DATE    NOT NULL,
     "endsAt"       DATE,
     "photoUrl"     TEXT,
+    "photoFocusX"  DOUBLE PRECISION NOT NULL DEFAULT 50,
+    "photoFocusY"  DOUBLE PRECISION NOT NULL DEFAULT 50,
     "colorIndex"   INTEGER NOT NULL DEFAULT 0,
+    "customColor"  TEXT,
     "createdAt"    TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "mandate_pkey" PRIMARY KEY ("id")

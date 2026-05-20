@@ -70,7 +70,7 @@ export function MandateMembersManager({mandateId, memberships, allMembers}: Prop
             {memberships.length === 0 ? (
                 <p className="text-[13px] text-[var(--text-4)] mb-4">No members assigned yet.</p>
             ) : (
-                <div className="mb-5">
+                <div className="mb-5 overflow-y-auto max-h-[420px] pr-3">
                     {memberships.map((ms) => (
                         <div
                             key={ms.id}

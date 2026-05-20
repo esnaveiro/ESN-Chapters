@@ -43,7 +43,7 @@ NEXT_PUBLIC_SECTION_NAME="ESN Porto"
 # Transaction mode (port 6543) — used by the app at runtime
 DATABASE_URL=postgresql://postgres.[ref]:[password]@aws-0-eu-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true
 
-# Session mode (port 5432) — used by Prisma migrations only
+# Session mode (port 5432) — used by Prisma migrations only (optional if DATABASE_URL is already port 5432)
 DIRECT_URL=postgresql://postgres.[ref]:[password]@aws-0-eu-west-1.pooler.supabase.com:5432/postgres
 
 # Supabase → Project Settings → API
@@ -52,7 +52,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
 SUPABASE_SERVICE_ROLE_KEY=eyJ...
 ```
 
-> **Session mode vs Transaction mode**: Prisma's migration engine requires a persistent connection. Always use the Session mode URL (port 5432). Transaction mode (port 6543) will cause `prisma migrate` to fail.
+> **Session mode vs Transaction mode**: Prisma's migration engine requires a persistent connection. `prisma.config.ts` uses `DIRECT_URL` if set, falling back to `DATABASE_URL`. If you only set `DATABASE_URL`, use the Session mode URL (port 5432). Transaction mode (port 6543) will cause `prisma migrate` to fail.
 
 ---
 
@@ -227,7 +227,7 @@ Set the four environment variables in your host's environment config.
 ## Troubleshooting
 
 **`prisma migrate dev` fails with connection error**
-Migrations use `DIRECT_URL`. Confirm it is set to the Session mode URL (port 5432), not Transaction mode (port 6543).
+Migrations use `DIRECT_URL` if set, otherwise `DATABASE_URL`. Confirm the URL used is Session mode (port 5432), not Transaction mode (port 6543).
 
 **Images not loading in production**
 Check that your Supabase project URL matches the `*.supabase.co` pattern in `next.config.ts`. If you use a custom domain for storage, add it explicitly.
