@@ -41,7 +41,7 @@ export function InviteForm() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
-                        placeholder="hr@esnaveiro.pt"
+                        placeholder="hr@esnaveiro.org"
                     />
                 </div>
                 <Button type="submit" disabled={loading}>
