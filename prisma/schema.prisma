@@ -4,9 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
 
 enum MemberStatus {
@@ -84,6 +82,8 @@ model Mandate {
   startsAt     DateTime  @db.Date
   endsAt       DateTime? @db.Date
   photoUrl     String?
+  photoFocusX  Float     @default(50)
+  photoFocusY  Float     @default(50)
   colorIndex   Int       @default(0)
   customColor  String?
   createdAt    DateTime  @default(now()) @db.Timestamptz(6)

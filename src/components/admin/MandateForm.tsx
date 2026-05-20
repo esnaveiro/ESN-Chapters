@@ -6,17 +6,22 @@ import {Input} from "@/components/ui/Input";
 import {Button} from "@/components/ui/Button";
 import {createMandate, MandateFormData, updateMandate} from "@/actions/mandates";
 import {PhotoUpload} from "./PhotoUpload";
+import {PhotoFocusPicker} from "./PhotoFocusPicker";
 import {MANDATE_COLORS} from "@/lib/utils";
 
 type Props = {
     mode: "create" | "edit";
     mandateId?: string;
-    defaultValues?: Partial<MandateFormData>;
+    defaultValues?: Partial<MandateFormData & {photoFocusX: number; photoFocusY: number}>;
+    formId?: string;
+    hideActions?: boolean;
 };
 
-export function MandateForm({mode, mandateId, defaultValues}: Props) {
+export function MandateForm({mode, mandateId, defaultValues, formId, hideActions}: Props) {
     const router = useRouter();
     const [photoUrl, setPhotoUrl] = useState(defaultValues?.photoUrl ?? "");
+    const [focusX, setFocusX] = useState(defaultValues?.photoFocusX ?? 50);
+    const [focusY, setFocusY] = useState(defaultValues?.photoFocusY ?? 50);
     const [colorIndex, setColorIndex] = useState(defaultValues?.colorIndex ?? 0);
     const [customColor, setCustomColor] = useState(defaultValues?.customColor ?? "");
     const [useCustom, setUseCustom] = useState(!!defaultValues?.customColor);
@@ -65,6 +70,8 @@ export function MandateForm({mode, mandateId, defaultValues}: Props) {
             startsAt: fd.get("startsAt") as string,
             endsAt: (fd.get("endsAt") as string) || undefined,
             photoUrl,
+            photoFocusX: focusX,
+            photoFocusY: focusY,
             colorIndex,
             customColor: useCustom ? customColor : "",
         };
@@ -85,13 +92,22 @@ export function MandateForm({mode, mandateId, defaultValues}: Props) {
     }
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form id={formId} onSubmit={handleSubmit} className="space-y-6">
             <PhotoUpload
                 bucket="mandate-photos"
                 currentUrl={photoUrl}
-                onUpload={setPhotoUrl}
+                onUpload={(url) => { setPhotoUrl(url); setFocusX(50); setFocusY(50); }}
                 label="Team photo"
             />
+
+            {photoUrl && (
+                <PhotoFocusPicker
+                    photoUrl={photoUrl}
+                    focusX={focusX}
+                    focusY={focusY}
+                    onChange={(x, y) => { setFocusX(x); setFocusY(y); }}
+                />
+            )}
 
             <Input
                 label="Mandate name"
@@ -266,14 +282,16 @@ export function MandateForm({mode, mandateId, defaultValues}: Props) {
 
             {error && <p className="text-sm text-red-600">{error}</p>}
 
-            <div className="flex gap-3">
-                <Button type="submit" disabled={loading}>
-                    {loading ? "Saving…" : mode === "create" ? "Create mandate" : "Save changes"}
-                </Button>
-                <Button type="button" variant="secondary" onClick={() => router.back()}>
-                    Cancel
-                </Button>
-            </div>
+            {!hideActions && (
+                <div className="flex gap-3">
+                    <Button type="submit" disabled={loading}>
+                        {loading ? "Saving…" : mode === "create" ? "Create mandate" : "Save changes"}
+                    </Button>
+                    <Button type="button" variant="secondary" onClick={() => router.back()}>
+                        Cancel
+                    </Button>
+                </div>
+            )}
         </form>
     );
 }

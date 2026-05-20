@@ -6,7 +6,7 @@ This guide is for HR Managers and IT Managers using the ESN Chapters admin panel
 
 ## Logging in
 
-Go to `/admin` on your section's Chronicle site. Enter the email and password you received in your invitation email.
+Go to `/admin` on your section's site (or click the lock icon in the top-right corner of the public nav). Enter the email and password you received in your invitation email.
 
 If you have not received an invitation, ask your IT Manager to invite you from the Settings page.
 
@@ -56,6 +56,19 @@ You can set both directions from either member's edit page. Changes on one side 
 
 Buddy relationships appear in the **Network** graph on the public site.
 
+### Tributes
+
+A tribute is a short message written by one member about another. Tributes appear on the recipient's public profile.
+
+You can add or remove tributes from two places:
+
+- **Member edit page** — the **Tributes** section shows all tributes this member has received. Select an author, write the message, optionally set a date, and click **Add tribute**.
+- **Admin → Tributes** — a dedicated page showing all tributes across all members, with a quick-add form (From, To, message, date) at the top.
+
+### Bulk actions
+
+On the Members list page, checkboxes appear next to each row. Select individual members or use **Select all** to select everyone visible. A bar appears at the bottom of the screen — click **Delete** once to arm, then **Confirm delete** to permanently remove the selected members.
+
 ---
 
 ## Mandates
@@ -64,7 +77,7 @@ A mandate represents one academic year of the board.
 
 ### Creating a mandate
 
-1. Go to **Admin → Mandates → New mandate**
+1. Go to **Admin → Mandates → Create mandate**
 2. Fill in the name (e.g. "Board 2024/25"), academic year, and start date
 3. Upload a team photo (optional)
 4. Save
@@ -82,22 +95,19 @@ Members can belong to multiple mandates across different years.
 
 On the mandate's edit page, find the member in the Team section and click the remove button next to their name.
 
----
+### Adjusting the team photo crop
 
-## Events
+After uploading a team photo, click **Adjust crop** to open the crop editor. Click or drag on the full photo to set the focal point — the **Folder preview** below updates live to show exactly how the photo will appear in the board page folders. Click **Apply** to save, or **Cancel** to discard.
 
-Events are activities the section organises. They appear on the Timeline and on mandate pages.
+The focal point is saved with the mandate and used on the public board page.
 
-### Creating an event
+### Adding milestones to a mandate
 
-1. Go to **Admin → Mandates → [mandate] → Edit**
-2. In the **Events** section, click **Add event**
-3. Fill in the title, dates, location, scope (Local / National / International), and type (Cultural / Projects / Activities / Other)
-4. Save
+On the mandate's edit page, scroll to the **Milestones** section at the bottom. Fill in the title, optional description, date, and type, then click **Add milestone**. Milestones can also be managed globally from **Admin → Milestones**.
 
-### Adding volunteers to an event
+### Bulk actions
 
-On the event's edit page, use the **Participants** section to add members and their role in the event.
+On the Mandates list page, checkboxes allow selecting multiple mandates for bulk deletion.
 
 ---
 
@@ -107,12 +117,33 @@ Milestones mark significant moments in the section's history — a first event o
 
 ### Creating a milestone
 
-1. Go to **Admin → Milestones → New milestone**
+1. Go to **Admin → Milestones → Add milestone**
 2. Fill in the title, date, type, and an optional description
 3. Optionally link it to a mandate
 4. Save
 
+Alternatively, add milestones directly from a mandate's edit page — they are pre-linked to that mandate automatically.
+
 Milestones appear on the **Timeline** page and on the linked mandate's detail page.
+
+### Bulk actions
+
+On the Milestones list page, checkboxes allow selecting multiple milestones for bulk deletion.
+
+---
+
+## Tributes
+
+**Admin → Tributes** shows all tributes written across the section in one place.
+
+- The **Add tribute** form at the top lets you quickly record a tribute: select the author (From), recipient (To), write the message, and optionally set the date (defaults to today)
+- Each row shows the author → recipient, the message, and the date
+- Click **Delete** then **Confirm** to remove a tribute
+- Both names link directly to their edit pages
+
+### Bulk actions
+
+Checkboxes allow selecting multiple tributes for bulk deletion.
 
 ---
 
@@ -123,18 +154,22 @@ Badges are custom recognitions you can award to members (e.g. "Best Onboarding",
 ### Creating a badge
 
 1. Go to **Admin → Badges → New badge**
-2. Give it a name, description, and optional icon (emoji or short text)
+2. Give it a name, description, and optional icon
 3. Save
 
 ### Awarding a badge
 
 1. Go to **Admin → Badges**, find the badge and click **Edit**
-2. In the **Awards** section on the right, select a member and enter the award date
+2. In the **Awards** section, select a member and enter the award date
 3. Click **Award** — the badge appears on their public profile immediately
 
 ### Revoking a badge
 
-On the badge's edit page, find the member in the Awards section and click **Revoke**. This removes the badge from their profile.
+On the badge's edit page, find the member in the Awards section and click **Revoke**.
+
+### Bulk actions
+
+On the Badges list page, checkboxes allow selecting multiple badges for bulk deletion.
 
 ---
 
@@ -163,6 +198,8 @@ Use the Supabase Auth email link. From the login page, click **Forgot password**
 ## Tips
 
 - **Photos**: Upload square or near-square images for member photos. Landscape photos work best for mandate team photos.
+- **Photo crop**: After uploading a mandate photo, always use **Adjust crop** to set the focal point so key faces aren't cut off in the board folders.
 - **Slugs**: Member slugs are used in public URLs (e.g. `/members/ana-silva`). Changing a slug after sharing the URL will break existing links.
 - **Dates**: All dates are stored without time. The join date and status start dates affect what appears on a member's timeline.
 - **Favourite memory**: This appears as a pull quote on the member's public profile — encourage members to write something personal.
+- **Bulk delete**: Deletion is permanent and cannot be undone. The two-step confirm (click Delete → click Confirm) is there to prevent accidents.

@@ -39,6 +39,7 @@ export async function createMilestone(
         });
         revalidatePath("/timeline");
         revalidatePath("/admin/milestones");
+        if (data.mandateId) revalidatePath(`/admin/mandates/${data.mandateId}/edit`);
         return {success: true, data: {id: milestone.id}};
     } catch (e) {
         return {success: false, error: String(e)};

@@ -7,6 +7,7 @@ import {NewbiesManager} from "@/components/admin/NewbiesManager";
 import {StatusHistoryManager} from "@/components/admin/StatusHistoryManager";
 import {StatusBadge} from "@/components/ui/Badge";
 import {DeleteButton} from "@/components/admin/DeleteButton";
+import {TributeManager} from "@/components/admin/TributeManager";
 import {deleteMember} from "@/actions/members";
 import {MemberStatus} from "@/generated/prisma/enums";
 
@@ -25,6 +26,10 @@ export default async function EditMemberPage({
                 buddyLinksAsNewbie: true,
                 buddyLinksAsBuddy: {
                     include: {newbie: {select: {id: true, fullName: true}}},
+                },
+                tributesReceived: {
+                    orderBy: {createdAt: "desc"},
+                    include: {author: {select: {id: true, fullName: true}}},
                 },
             },
         }),
@@ -112,6 +117,20 @@ export default async function EditMemberPage({
                         />
                     </div>
                 </div>
+            </section>
+
+            <div className="border-t border-[var(--border)] mb-10"/>
+
+            {/* Tributes */}
+            <section className="mb-10">
+                <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--text-4)] mb-6">
+                    Tributes
+                </p>
+                <TributeManager
+                    recipientId={member.id}
+                    tributes={member.tributesReceived}
+                    allMembers={allMembers.filter((m) => m.id !== member.id)}
+                />
             </section>
 
             <div className="border-t border-[var(--border)] mb-10"/>

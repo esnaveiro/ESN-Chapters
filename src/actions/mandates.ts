@@ -20,6 +20,8 @@ export type MandateFormData = {
     startsAt: string;
     endsAt?: string;
     photoUrl?: string;
+    photoFocusX?: number;
+    photoFocusY?: number;
     colorIndex?: number;
     customColor?: string;
 };
@@ -36,6 +38,8 @@ export async function createMandate(
                 startsAt: new Date(data.startsAt),
                 endsAt: data.endsAt ? new Date(data.endsAt) : null,
                 photoUrl: data.photoUrl || null,
+                photoFocusX: data.photoFocusX ?? 50,
+                photoFocusY: data.photoFocusY ?? 50,
                 colorIndex: data.colorIndex ?? 0,
                 customColor: data.customColor || null,
             },
@@ -65,6 +69,8 @@ export async function updateMandate(
                     endsAt: data.endsAt ? new Date(data.endsAt) : null,
                 }),
                 ...(data.photoUrl !== undefined && {photoUrl: data.photoUrl}),
+                ...(data.photoFocusX !== undefined && {photoFocusX: data.photoFocusX}),
+                ...(data.photoFocusY !== undefined && {photoFocusY: data.photoFocusY}),
                 ...(data.colorIndex !== undefined && {colorIndex: data.colorIndex}),
                 ...(data.customColor !== undefined && {customColor: data.customColor || null}),
             },

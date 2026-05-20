@@ -3,15 +3,16 @@ import {prisma} from "@/lib/prisma";
 import {StatusBadge} from "@/components/ui/Badge";
 
 export default async function AdminDashboard() {
-    const [memberCount, mandateCount, milestoneCount, recentMembers] =
+    const [memberCount, mandateCount, milestoneCount, tributeCount, recentMembers] =
         await Promise.all([
             prisma.member.count(),
             prisma.mandate.count(),
             prisma.milestone.count(),
+            prisma.tribute.count(),
             prisma.member.findMany({
                 orderBy: {createdAt: "desc"},
                 take: 8,
-                include: {statusHistory: {where: {endedAt: null}}},
+                select: {id: true, fullName: true, slug: true, statusHistory: {where: {endedAt: null}, select: {status: true}}},
             }),
         ]);
 
@@ -28,6 +29,8 @@ export default async function AdminDashboard() {
                     <span className="text-[var(--text-1)] font-semibold">{mandateCount}</span>{" "}mandates
                     <span className="mx-2 text-[var(--text-4)]">·</span>
                     <span className="text-[var(--text-1)] font-semibold">{milestoneCount}</span>{" "}milestones
+                    <span className="mx-2 text-[var(--text-4)]">·</span>
+                    <span className="text-[var(--text-1)] font-semibold">{tributeCount}</span>{" "}tributes
                 </p>
             </div>
 
@@ -78,12 +81,21 @@ export default async function AdminDashboard() {
                                             {member.fullName}
                                         </p>
                                         <StatusBadge status={status}/>
-                                        <Link
-                                            href={`/admin/members/${member.id}/edit`}
-                                            className="text-[11px] text-[var(--text-4)] hover:text-[var(--text-1)] no-underline transition-colors shrink-0"
-                                        >
-                                            Edit
-                                        </Link>
+                                        <div className="flex items-center gap-3 shrink-0">
+                                            <Link
+                                                href={`/admin/members/${member.id}/edit`}
+                                                className="text-[11px] text-[var(--text-3)] hover:text-[var(--text-1)] no-underline transition-colors"
+                                            >
+                                                Edit
+                                            </Link>
+                                            <Link
+                                                href={`/members/${member.slug}`}
+                                                target="_blank"
+                                                className="text-[11px] text-[var(--text-4)] hover:text-[var(--text-1)] no-underline transition-colors"
+                                            >
+                                                View
+                                            </Link>
+                                        </div>
                                     </div>
                                 );
                             })}

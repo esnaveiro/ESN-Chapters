@@ -3,6 +3,7 @@ import Link from "next/link";
 import {prisma} from "@/lib/prisma";
 import {MandateForm} from "@/components/admin/MandateForm";
 import {MandateMembersManager} from "@/components/admin/MandateMembersManager";
+import {MandateMilestoneManager} from "@/components/admin/MandateMilestoneManager";
 import {DeleteButton} from "@/components/admin/DeleteButton";
 import {deleteMandate} from "@/actions/mandates";
 
@@ -18,11 +19,10 @@ export default async function EditMandatePage({
             where: {id},
             include: {
                 memberships: {
-                    include: {
-                        member: {select: {id: true, fullName: true}},
-                    },
+                    include: {member: {select: {id: true, fullName: true}}},
                     orderBy: {department: "asc"},
                 },
+                milestones: {orderBy: {happenedAt: "asc"}},
             },
         }),
         prisma.member.findMany({
@@ -61,12 +61,16 @@ export default async function EditMandatePage({
                     <MandateForm
                         mode="edit"
                         mandateId={mandate.id}
+                        formId="mandate-details"
+                        hideActions
                         defaultValues={{
                             name: mandate.name,
                             academicYear: mandate.academicYear,
                             startsAt: mandate.startsAt.toISOString(),
                             endsAt: mandate.endsAt?.toISOString(),
                             photoUrl: mandate.photoUrl ?? "",
+                            photoFocusX: mandate.photoFocusX,
+                            photoFocusY: mandate.photoFocusY,
                             colorIndex: mandate.colorIndex,
                             customColor: mandate.customColor ?? "",
                         }}
@@ -86,6 +90,39 @@ export default async function EditMandatePage({
                         allMembers={allMembers}
                     />
                 </section>
+            </div>
+
+            <div className="my-10"/>
+
+            <section>
+                <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--text-4)] mb-6">
+                    Milestones{" "}
+                    <span className="font-normal normal-case tracking-normal text-[var(--text-4)]">
+                        ({mandate.milestones.length})
+                    </span>
+                </p>
+                <MandateMilestoneManager
+                    mandateId={mandate.id}
+                    milestones={mandate.milestones}
+                />
+            </section>
+
+            <div className="border-t border-[var(--border)] mt-12 mb-8"/>
+
+            <div className="flex gap-3">
+                <button
+                    type="submit"
+                    form="mandate-details"
+                    className="px-4 py-2 rounded-[var(--radius-md)] bg-[var(--accent)] text-white text-[13px] font-semibold hover:opacity-90 transition-opacity"
+                >
+                    Save changes
+                </button>
+                <Link
+                    href="/admin/mandates"
+                    className="px-4 py-2 rounded-[var(--radius-md)] border border-[var(--border)] text-[13px] font-medium text-[var(--text-2)] hover:bg-[var(--surface-raised)] transition-colors no-underline"
+                >
+                    Cancel
+                </Link>
             </div>
         </div>
     );

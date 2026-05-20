@@ -10,6 +10,8 @@ type Mandate = {
     name: string;
     academicYear: string;
     photoUrl: string | null;
+    photoFocusX: number;
+    photoFocusY: number;
     colorIndex: number;
     customColor?: string | null;
     _count: { memberships: number; events: number };
@@ -266,7 +268,8 @@ export function MandateLedger({mandates}: { mandates: Mandate[] }) {
                                                         style={{borderRadius: 10, height: 190}}
                                                     >
                                                         <Image src={m.photoUrl} alt={m.name} fill
-                                                               className="object-cover"/>
+                                                               className="object-cover"
+                                                               style={{objectPosition: `${m.photoFocusX}% ${m.photoFocusY}%`}}/>
                                                         <div className="absolute inset-0"
                                                              style={{background: "rgba(0,0,0,0.12)"}}/>
                                                     </div>
