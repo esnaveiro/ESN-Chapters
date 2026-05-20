@@ -1,10 +1,10 @@
 "use client";
 
-import {useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {useRouter} from "next/navigation";
 import {Button} from "@/components/ui/Button";
 import {Select} from "@/components/ui/Select";
-import {addMemberToMandate, removeMemberFromMandate} from "@/actions/mandates";
+import {addMemberToMandate, removeMemberFromMandate, reorderMandateMemberships} from "@/actions/mandates";
 
 type Membership = {
     id: string;
@@ -24,6 +24,7 @@ const inputBase =
 
 export function MandateMembersManager({mandateId, memberships, allMembers}: Props) {
     const router = useRouter();
+    const [items, setItems] = useState(memberships);
     const [adding, setAdding] = useState(false);
     const [memberId, setMemberId] = useState("");
     const [department, setDepartment] = useState("");
@@ -32,23 +33,22 @@ export function MandateMembersManager({mandateId, memberships, allMembers}: Prop
     const [removingId, setRemovingId] = useState<string | null>(null);
     const [error, setError] = useState("");
 
+    useEffect(() => { setItems(memberships); }, [memberships]);
+
+    const dragItem = useRef<number | null>(null);
+    const dragOverItem = useRef<number | null>(null);
+    const [dragOverId, setDragOverId] = useState<string | null>(null);
+
     const available = allMembers.filter(
-        (m) => !memberships.some((ms) => ms.member.id === m.id),
+        (m) => !items.some((ms) => ms.member.id === m.id),
     );
 
     async function handleAdd() {
-        if (!memberId) {
-            setError("Select a member");
-            return;
-        }
+        if (!memberId) { setError("Select a member"); return; }
         setLoading(true);
         setError("");
         const result = await addMemberToMandate(mandateId, memberId, department, roleTitle);
-        if (!result.success) {
-            setError(result.error);
-            setLoading(false);
-            return;
-        }
+        if (!result.success) { setError(result.error); setLoading(false); return; }
         setAdding(false);
         setMemberId("");
         setDepartment("");
@@ -60,28 +60,81 @@ export function MandateMembersManager({mandateId, memberships, allMembers}: Prop
     async function handleRemove(membershipId: string) {
         setRemovingId(membershipId);
         await removeMemberFromMandate(membershipId, mandateId);
-        router.refresh();
+        setItems(prev => prev.filter(ms => ms.id !== membershipId));
         setRemovingId(null);
+    }
+
+    function handleDragStart(index: number) {
+        dragItem.current = index;
+    }
+
+    function handleDragEnter(index: number, id: string) {
+        dragOverItem.current = index;
+        setDragOverId(id);
+    }
+
+    async function handleDrop() {
+        const from = dragItem.current;
+        const to = dragOverItem.current;
+        if (from === null || to === null || from === to) {
+            dragItem.current = null;
+            dragOverItem.current = null;
+            setDragOverId(null);
+            return;
+        }
+        const reordered = [...items];
+        const [moved] = reordered.splice(from, 1);
+        reordered.splice(to, 0, moved);
+        setItems(reordered);
+        dragItem.current = null;
+        dragOverItem.current = null;
+        setDragOverId(null);
+        await reorderMandateMemberships(mandateId, reordered.map(ms => ms.id));
     }
 
     return (
         <div>
             {/* Member list */}
-            {memberships.length === 0 ? (
+            {items.length === 0 ? (
                 <p className="text-[13px] text-[var(--text-4)] mb-4">No members assigned yet.</p>
             ) : (
                 <div className="mb-5 overflow-y-auto max-h-[420px] pr-3">
-                    {memberships.map((ms) => (
+                    {items.map((ms, index) => (
                         <div
                             key={ms.id}
-                            className="flex items-center gap-3 py-2.5 border-b border-[var(--border)] last:border-0"
+                            draggable
+                            onDragStart={() => handleDragStart(index)}
+                            onDragEnter={() => handleDragEnter(index, ms.id)}
+                            onDragEnd={handleDrop}
+                            onDragOver={(e) => e.preventDefault()}
+                            className={[
+                                "flex items-center gap-3 py-2.5 border-b border-[var(--border)] last:border-0 transition-colors",
+                                dragOverId === ms.id && dragItem.current !== index
+                                    ? "bg-[var(--surface-raised)]"
+                                    : "",
+                            ].join(" ")}
                         >
+                            {/* Drag handle */}
+                            <div
+                                className="shrink-0 cursor-grab active:cursor-grabbing text-[var(--text-4)] hover:text-[var(--text-2)] transition-colors"
+                                title="Drag to reorder"
+                            >
+                                <svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor">
+                                    <circle cx="4" cy="3" r="1.5"/>
+                                    <circle cx="8" cy="3" r="1.5"/>
+                                    <circle cx="4" cy="8" r="1.5"/>
+                                    <circle cx="8" cy="8" r="1.5"/>
+                                    <circle cx="4" cy="13" r="1.5"/>
+                                    <circle cx="8" cy="13" r="1.5"/>
+                                </svg>
+                            </div>
+
                             <div className="flex-1 min-w-0">
                                 <p className="text-[13px] font-medium text-[var(--text-1)] truncate">
                                     {ms.member.fullName}
                                 </p>
                                 <p className="text-[11px] text-[var(--text-4)]">
-                                    {ms.roleTitle} · {ms.department}
+                                    {ms.roleTitle}{ms.roleTitle && ms.department ? " · " : ""}{ms.department}
                                 </p>
                             </div>
                             <button
@@ -122,10 +175,7 @@ export function MandateMembersManager({mandateId, memberships, allMembers}: Prop
                         <Button size="sm" onClick={handleAdd} disabled={loading}>
                             {loading ? "Adding…" : "Add"}
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={() => {
-                            setAdding(false);
-                            setError("");
-                        }}>
+                        <Button size="sm" variant="ghost" onClick={() => { setAdding(false); setError(""); }}>
                             Cancel
                         </Button>
                     </div>

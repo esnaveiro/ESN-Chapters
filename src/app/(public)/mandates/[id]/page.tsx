@@ -53,7 +53,7 @@ export default async function MandatePage({
             include: {
                 memberships: {
                     include: {member: {include: {statusHistory: true}}},
-                    orderBy: [{department: "asc"}, {roleTitle: "asc"}],
+                    orderBy: [{sortOrder: "asc"}, {createdAt: "asc"}],
                 },
                 milestones: {orderBy: {happenedAt: "asc"}},
                 events: {
@@ -79,8 +79,10 @@ export default async function MandatePage({
         if (!deptMap.has(key)) deptMap.set(key, []);
         deptMap.get(key)!.push(ms);
     }
-    // Sort: named departments alphabetically, "General" last
+    // Sort: Board first, named departments alphabetically, "General" last
     const departments = [...deptMap.keys()].sort((a, b) => {
+        if (a === "Board") return -1;
+        if (b === "Board") return 1;
         if (a === "General") return 1;
         if (b === "General") return -1;
         return a.localeCompare(b);

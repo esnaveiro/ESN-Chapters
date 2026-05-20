@@ -20,7 +20,7 @@ export default async function EditMandatePage({
             include: {
                 memberships: {
                     include: {member: {select: {id: true, fullName: true}}},
-                    orderBy: {department: "asc"},
+                    orderBy: [{sortOrder: "asc"}, {createdAt: "asc"}],
                 },
                 milestones: {orderBy: {happenedAt: "asc"}},
             },

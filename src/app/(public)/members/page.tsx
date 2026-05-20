@@ -14,7 +14,7 @@ export default async function MembersPage() {
         include: {
             memberships: {
                 include: {member: {include: {statusHistory: true}}},
-                orderBy: {roleTitle: "asc"},
+                orderBy: [{sortOrder: "asc"}, {createdAt: "asc"}],
             },
         },
     });
@@ -33,7 +33,7 @@ export default async function MembersPage() {
         <div className="mx-auto px-5 md:px-10 pt-8 md:pt-[52px] pb-[100px]" style={{maxWidth: 1280}}>
 
             {/* ── Two-column layout: index + chapters ───────────────── */}
-            <div className="flex items-start gap-14">
+            <div className="flex gap-14">
 
                 <div className="hidden md:block">
                     <YearbookIndex entries={indexEntries}/>
@@ -42,7 +42,7 @@ export default async function MembersPage() {
                 <div className="flex-1 min-w-0 flex flex-col gap-[88px]">
                     {mandates.map((mandate, idx) => {
                         const color = getMandateColor(mandate.colorIndex, mandate.customColor);
-                        const edition = String(mandates.length - idx).padStart(2, "0");
+                        const edition = String(idx + 1).padStart(2, "0");
 
                         return (
                             <section

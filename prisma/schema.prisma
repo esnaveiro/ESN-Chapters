@@ -101,6 +101,7 @@ model MandateMembership {
   mandateId  String   @db.Uuid
   department String
   roleTitle  String
+  sortOrder  Int      @default(0)
   createdAt  DateTime @default(now()) @db.Timestamptz(6)
 
   member  Member  @relation(fields: [memberId], references: [id])

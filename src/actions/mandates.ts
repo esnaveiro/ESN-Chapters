@@ -118,8 +118,13 @@ export async function addMemberToMandate(
 ): Promise<ActionResult> {
     try {
         await requireAuth();
+        const max = await prisma.mandateMembership.aggregate({
+            where: {mandateId},
+            _max: {sortOrder: true},
+        });
+        const sortOrder = (max._max.sortOrder ?? -1) + 1;
         await prisma.mandateMembership.create({
-            data: {mandateId, memberId, department, roleTitle},
+            data: {mandateId, memberId, department, roleTitle, sortOrder},
         });
         revalidatePath(`/mandates/${mandateId}`);
         revalidatePath("/admin/mandates");
@@ -138,6 +143,25 @@ export async function removeMemberFromMandate(
         await prisma.mandateMembership.delete({where: {id: membershipId}});
         revalidatePath(`/mandates/${mandateId}`);
         revalidatePath("/admin/mandates");
+        return {success: true, data: undefined};
+    } catch (e) {
+        return {success: false, error: String(e)};
+    }
+}
+
+export async function reorderMandateMemberships(
+    mandateId: string,
+    orderedIds: string[],
+): Promise<ActionResult> {
+    try {
+        await requireAuth();
+        await prisma.$transaction(
+            orderedIds.map((id, i) =>
+                prisma.mandateMembership.update({where: {id}, data: {sortOrder: i}})
+            )
+        );
+        revalidatePath(`/mandates/${mandateId}`);
+        revalidatePath(`/admin/mandates/${mandateId}/edit`);
         return {success: true, data: undefined};
     } catch (e) {
         return {success: false, error: String(e)};
