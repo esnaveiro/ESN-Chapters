@@ -1,4 +1,4 @@
-# ESN Chronicle
+# ESN Chapters
 
 A living archive for ESN sections — preserving volunteers, mandates, events, and the connections between people across every year of a section's history.
 
@@ -36,8 +36,8 @@ Built by [ESN Aveiro](https://esnaveiro.pt) and open-sourced so any ESN section 
 ## Quick start
 
 ```bash
-git clone https://github.com/your-org/esn-chronicle.git
-cd esn-chronicle
+git clone https://github.com/your-org/esn-chapters.git
+cd esn-chapters
 npm install
 cp .env.example .env.local   # fill in your Supabase credentials
 npm run dev
