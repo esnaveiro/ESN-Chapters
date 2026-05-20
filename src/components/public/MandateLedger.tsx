@@ -165,7 +165,9 @@ export function MandateLedger({mandates}: { mandates: Mandate[] }) {
                                 onMouseEnter={!isMobile ? () => setOpenId(m.id) : undefined}
                                 onClick={
                                     isMobile
-                                        ? (!isOpen ? () => setOpenId(m.id) : undefined)
+                                        ? (isOpen
+                                            ? () => { window.location.href = `/mandates/${m.id}`; }
+                                            : () => setOpenId(m.id))
                                         : () => { window.location.href = `/mandates/${m.id}`; }
                                 }
                             >
@@ -222,14 +224,20 @@ export function MandateLedger({mandates}: { mandates: Mandate[] }) {
                                                   style={{fontSize: 13}}>
                                                 {m._count.memberships} members · {m._count.events} events
                                             </span>
-                                            <Link
-                                                href={`/mandates/${m.id}`}
-                                                className="ml-2 text-white/75 hover:text-white transition-colors shrink-0 font-medium"
-                                                style={{fontSize: 13}}
-                                                onClick={(e) => e.stopPropagation()}
-                                            >
-                                                Open →
-                                            </Link>
+                                            {isMobile ? (
+                                                <span className="ml-2 text-white/75 shrink-0 font-medium" style={{fontSize: 13}}>
+                                                    Tap to open →
+                                                </span>
+                                            ) : (
+                                                <Link
+                                                    href={`/mandates/${m.id}`}
+                                                    className="ml-2 text-white/75 hover:text-white transition-colors shrink-0 font-medium"
+                                                    style={{fontSize: 13}}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    Open →
+                                                </Link>
+                                            )}
                                         </div>
 
                                         <div className="px-7 pb-7">
