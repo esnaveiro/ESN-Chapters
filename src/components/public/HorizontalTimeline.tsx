@@ -78,9 +78,7 @@ export function HorizontalTimeline({mandates, milestones, events}: {
     const [vh, setVh] = useState(800);
     const [isMobile, setIsMobile] = useState(false);
     const dragRef = useRef<{ startX: number; startScroll: number } | null>(null);
-    const panRef = useRef<ReturnType<typeof setInterval> | null>(null);
-    const scrollHeightRef = useRef(0);
-    const maxTxRef = useRef(0);
+    const scrubDragRef = useRef(false);
     const [activeMandateId, setActiveMandateId] = useState<string | null>(mandates[0]?.id ?? null);
     const [hoveredMemberId, setHoveredMemberId] = useState<string | null>(null);
     const [hoveredItem, setHoveredItem] = useState<
@@ -141,25 +139,34 @@ export function HorizontalTimeline({mandates, milestones, events}: {
     const scrollHeight = Math.max(totalWidth - vw * (1 - CURSOR_F) + 100, 600);
     const maxTx = Math.max(0, totalWidth - vw * (1 - CURSOR_F));
 
-    useEffect(() => { scrollHeightRef.current = scrollHeight; }, [scrollHeight]);
-    useEffect(() => { maxTxRef.current = maxTx; }, [maxTx]);
-    useEffect(() => () => { if (panRef.current) clearInterval(panRef.current); }, []);
+    /* ── Scrubber ───────────────────────────────────────────────── */
+    const scrubberH = 40;
+    const scrubThumbW = 40;
+    const scrubThumbX = maxTx > 0 ? (tx / maxTx) * ((vw - 24) - scrubThumbW) : 0;
 
-    function startPan(direction: -1 | 1, txPerTick: number) {
-        if (panRef.current) clearInterval(panRef.current);
-        panRef.current = setInterval(() => {
-            const sh = scrollHeightRef.current;
-            const mt = maxTxRef.current;
-            if (mt === 0) return;
-            window.scrollBy({top: direction * txPerTick * (sh / mt)});
-        }, 50);
+    function moveScrubber(e: React.PointerEvent<HTMLDivElement>) {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const fraction = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        const outer = outerRef.current;
+        if (!outer) return;
+        const outerTop = outer.getBoundingClientRect().top + window.scrollY;
+        window.scrollTo({top: outerTop + fraction * scrollHeight});
     }
 
-    function stopPan() {
-        if (panRef.current !== null) {
-            clearInterval(panRef.current);
-            panRef.current = null;
-        }
+    function handleScrubPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+        e.stopPropagation();
+        e.currentTarget.setPointerCapture(e.pointerId);
+        scrubDragRef.current = true;
+        moveScrubber(e);
+    }
+
+    function handleScrubPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+        if (!scrubDragRef.current) return;
+        moveScrubber(e);
+    }
+
+    function handleScrubPointerUp() {
+        scrubDragRef.current = false;
     }
 
     function handleDragStart(e: React.PointerEvent) {
@@ -854,12 +861,12 @@ export function HorizontalTimeline({mandates, milestones, events}: {
                     style={{
                         position: "absolute",
                         ...(isMobile
-                            ? {bottom: MOBILE_NAV_H + 12 + MINIMAP_H + 10, right: 12, textAlign: "right"}
+                            ? {bottom: MOBILE_NAV_H + scrubberH + 24, right: 16, textAlign: "right"}
                             : {bottom: 64, left: 48}),
                         transition: "opacity 0.35s ease",
                         opacity: activeMandate ? 1 : 0,
                         pointerEvents: "none",
-                        maxWidth: isMobile ? Math.min(MINIMAP_W, vw - 24) : undefined,
+                        maxWidth: isMobile ? vw - 32 : undefined,
                     }}
                 >
                     <div
@@ -920,85 +927,131 @@ export function HorizontalTimeline({mandates, milestones, events}: {
                     )}
                 </div>
 
-                {/* ── Minimap ───────────────────────────────────────────── */}
-                <div
-                    onClick={handleMinimapClick}
-                    style={{
-                        position: "absolute",
-                        bottom: isMobile ? MOBILE_NAV_H + 12 : 20,
-                        right: isMobile ? 12 : 20,
-                        width: isMobile ? Math.min(MINIMAP_W, vw - 24) : MINIMAP_W,
-                        height: MINIMAP_H,
-                        background: "var(--bg)",
-                        border: "1px solid var(--border)",
-                        borderRadius: 8,
-                        overflow: "hidden",
-                        cursor: "pointer",
-                        zIndex: 20,
-                    }}
-                >
-                    {/* Mandate era bands */}
-                    {mandates.map((m, i) => {
-                        const color = getMandateColor(m.colorIndex ?? i, m.customColor);
-                        const x1 = toX(new Date(m.startsAt), origin) / totalWidth * MINIMAP_W;
-                        const x2 = toX(mandateRanges[i].end, origin) / totalWidth * MINIMAP_W;
-                        return (
-                            <div key={m.id} style={{
-                                position: "absolute", left: x1, top: 0,
-                                width: Math.max(x2 - x1, 2), height: "100%",
-                                background: color, opacity: 0.25,
-                            }}/>
-                        );
-                    })}
-                    {/* Track line */}
-                    <div style={{
-                        position: "absolute", left: 0, right: 0,
-                        top: "50%", height: 1, background: "var(--border-strong)",
-                    }}/>
-                    {/* Event dots */}
-                    {events.map((e) => {
-                        const x = toX(new Date(e.startsAt), origin) / totalWidth * MINIMAP_W;
-                        return (
-                            <div key={e.id} style={{
-                                position: "absolute",
-                                left: x - 1.5, top: "50%", transform: "translateY(-50%)",
-                                width: 3, height: 3, borderRadius: "50%",
-                                background: eventTypeColor(e.eventType),
-                            }}/>
-                        );
-                    })}
-                    {/* Milestone diamonds */}
-                    {milestones.map((ms) => {
-                        const x = toX(new Date(ms.happenedAt), origin) / totalWidth * MINIMAP_W;
-                        return (
-                            <div key={ms.id} style={{
-                                position: "absolute",
-                                left: x - 3, top: "50%", transform: "translateY(-50%) rotate(45deg)",
-                                width: 5, height: 5, background: milestoneTypeColor(ms.type),
-                            }}/>
-                        );
-                    })}
-                    {/* Viewport indicator */}
-                    <div style={{
-                        position: "absolute",
-                        left: tx / totalWidth * MINIMAP_W,
-                        top: 0,
-                        width: Math.max(vw / totalWidth * MINIMAP_W, 6),
-                        height: "100%",
-                        background: activeColor,
-                        opacity: 0.18,
-                        borderLeft: `2px solid ${activeColor}`,
-                        transition: "left 0.1s linear, background 0.4s ease, border-color 0.4s ease",
-                    }}/>
-                </div>
+                {/* ── Minimap (desktop only) ────────────────────────────── */}
+                {!isMobile && (
+                    <div
+                        onClick={handleMinimapClick}
+                        style={{
+                            position: "absolute",
+                            bottom: 20, right: 20,
+                            width: MINIMAP_W, height: MINIMAP_H,
+                            background: "var(--bg)",
+                            border: "1px solid var(--border)",
+                            borderRadius: 8,
+                            overflow: "hidden",
+                            cursor: "pointer",
+                            zIndex: 20,
+                        }}
+                    >
+                        {mandates.map((m, i) => {
+                            const color = getMandateColor(m.colorIndex ?? i, m.customColor);
+                            const x1 = toX(new Date(m.startsAt), origin) / totalWidth * MINIMAP_W;
+                            const x2 = toX(mandateRanges[i].end, origin) / totalWidth * MINIMAP_W;
+                            return (
+                                <div key={m.id} style={{
+                                    position: "absolute", left: x1, top: 0,
+                                    width: Math.max(x2 - x1, 2), height: "100%",
+                                    background: color, opacity: 0.25,
+                                }}/>
+                            );
+                        })}
+                        <div style={{position: "absolute", left: 0, right: 0, top: "50%", height: 1, background: "var(--border-strong)"}}/>
+                        {events.map((e) => {
+                            const x = toX(new Date(e.startsAt), origin) / totalWidth * MINIMAP_W;
+                            return (
+                                <div key={e.id} style={{
+                                    position: "absolute",
+                                    left: x - 1.5, top: "50%", transform: "translateY(-50%)",
+                                    width: 3, height: 3, borderRadius: "50%",
+                                    background: eventTypeColor(e.eventType),
+                                }}/>
+                            );
+                        })}
+                        {milestones.map((ms) => {
+                            const x = toX(new Date(ms.happenedAt), origin) / totalWidth * MINIMAP_W;
+                            return (
+                                <div key={ms.id} style={{
+                                    position: "absolute",
+                                    left: x - 3, top: "50%", transform: "translateY(-50%) rotate(45deg)",
+                                    width: 5, height: 5, background: milestoneTypeColor(ms.type),
+                                }}/>
+                            );
+                        })}
+                        <div style={{
+                            position: "absolute",
+                            left: tx / totalWidth * MINIMAP_W, top: 0,
+                            width: Math.max(vw / totalWidth * MINIMAP_W, 6), height: "100%",
+                            background: activeColor, opacity: 0.18,
+                            borderLeft: `2px solid ${activeColor}`,
+                            transition: "left 0.1s linear, background 0.4s ease, border-color 0.4s ease",
+                        }}/>
+                    </div>
+                )}
 
-                {/* ── Scroll hint ───────────────────────────────────────── */}
-                {tx < 40 && (
+                {/* ── Mobile scrubber ───────────────────────────────────── */}
+                {isMobile && (
+                    <div
+                        onPointerDown={handleScrubPointerDown}
+                        onPointerMove={handleScrubPointerMove}
+                        onPointerUp={handleScrubPointerUp}
+                        onPointerCancel={handleScrubPointerUp}
+                        style={{
+                            position: "absolute",
+                            bottom: MOBILE_NAV_H + 12,
+                            left: 12, right: 12,
+                            height: scrubberH,
+                            background: "var(--surface-raised)",
+                            border: "1px solid var(--border)",
+                            borderRadius: scrubberH / 2,
+                            overflow: "hidden",
+                            zIndex: 25,
+                            touchAction: "none",
+                            cursor: "pointer",
+                        }}
+                    >
+                        {/* Mandate colour bands */}
+                        {mandates.map((m, i) => {
+                            const color = getMandateColor(m.colorIndex ?? i, m.customColor);
+                            const x1 = toX(new Date(m.startsAt), origin) / totalWidth * (vw - 24);
+                            const x2 = toX(mandateRanges[i].end, origin) / totalWidth * (vw - 24);
+                            return (
+                                <div key={m.id} style={{
+                                    position: "absolute", left: x1, top: 0,
+                                    width: Math.max(x2 - x1, 2), height: "100%",
+                                    background: color, opacity: 0.25,
+                                }}/>
+                            );
+                        })}
+                        {/* Thumb */}
+                        <div style={{
+                            position: "absolute",
+                            left: scrubThumbX,
+                            top: 4,
+                            width: scrubThumbW,
+                            height: scrubberH - 8,
+                            background: activeColor,
+                            borderRadius: (scrubberH - 8) / 2,
+                            transition: "background 0.4s ease",
+                            pointerEvents: "none",
+                            boxShadow: "0 2px 6px rgba(0,0,0,0.22)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 3,
+                        }}>
+                            <div style={{width: 2, height: 12, borderRadius: 1, background: "rgba(255,255,255,0.45)"}}/>
+                            <div style={{width: 2, height: 12, borderRadius: 1, background: "rgba(255,255,255,0.45)"}}/>
+                            <div style={{width: 2, height: 12, borderRadius: 1, background: "rgba(255,255,255,0.45)"}}/>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Scroll hint (desktop only) ────────────────────────── */}
+                {!isMobile && tx < 40 && (
                     <div
                         style={{
                             position: "absolute",
-                            bottom: isMobile ? MOBILE_NAV_H + MINIMAP_H + 24 : 84,
-                            right: isMobile ? 12 : 48,
+                            bottom: 84, right: 48,
                             fontSize: 11,
                             color: "var(--text-4)",
                             letterSpacing: "0.12em",
@@ -1007,58 +1060,11 @@ export function HorizontalTimeline({mandates, milestones, events}: {
                             animation: "pulse 2s infinite",
                         }}
                     >
-                        {isMobile ? "Drag to explore →" : "Scroll to explore →"}
+                        Scroll to explore →
                     </div>
-                )}
-
-                {/* ── Mobile pan buttons ────────────────────────────────── */}
-                {isMobile && (
-                    <>
-                        <div style={{
-                            position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)",
-                            display: "flex", flexDirection: "column", gap: 6, zIndex: 25,
-                        }}>
-                            <PanButton onStart={() => startPan(-1, 300)} onStop={stopPan} label="«"/>
-                            <PanButton onStart={() => startPan(-1, 70)} onStop={stopPan} label="‹"/>
-                        </div>
-                        <div style={{
-                            position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
-                            display: "flex", flexDirection: "column", gap: 6, zIndex: 25,
-                        }}>
-                            <PanButton onStart={() => startPan(1, 70)} onStop={stopPan} label="›"/>
-                            <PanButton onStart={() => startPan(1, 300)} onStop={stopPan} label="»"/>
-                        </div>
-                    </>
                 )}
             </div>
         </div>
-    );
-}
-
-function PanButton({onStart, onStop, label}: { onStart: () => void; onStop: () => void; label: string }) {
-    return (
-        <button
-            onPointerDown={(e) => {
-                e.stopPropagation();
-                e.currentTarget.setPointerCapture(e.pointerId);
-                onStart();
-            }}
-            onPointerUp={(e) => { e.stopPropagation(); onStop(); }}
-            onPointerCancel={onStop}
-            style={{
-                width: 40, height: 40, borderRadius: "50%",
-                background: "var(--surface-raised)",
-                border: "1px solid var(--border)",
-                color: "var(--text-2)",
-                fontSize: 18,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                cursor: "pointer",
-                userSelect: "none",
-                WebkitUserSelect: "none",
-            } as React.CSSProperties}
-        >
-            {label}
-        </button>
     );
 }
 
