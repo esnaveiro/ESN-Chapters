@@ -80,7 +80,7 @@ export default async function MemberProfilePage({
         <>
             {/* ── Header ──────────────────────────────────────────────────── */}
             <div className="bg-[var(--bg)] border-b border-[var(--border)] relative overflow-hidden">
-                <div className="mx-auto px-10" style={{maxWidth: 1160}}>
+                <div className="mx-auto px-5 md:px-10" style={{maxWidth: 1160}}>
 
                     <div className="pt-6">
                         <Link href="/members"
@@ -89,11 +89,11 @@ export default async function MemberProfilePage({
                         </Link>
                     </div>
 
-                    <div className="flex gap-12 items-end pt-10">
+                    <div className="flex flex-col sm:flex-row gap-6 sm:gap-12 sm:items-end pt-8 sm:pt-10">
 
                         {/* Portrait */}
                         <div
-                            className="shrink-0 w-[200px] h-[256px] rounded-t-lg overflow-hidden bg-[var(--surface-raised)] self-end">
+                            className="shrink-0 w-[120px] h-[154px] sm:w-[200px] sm:h-[256px] rounded-t-lg overflow-hidden bg-[var(--surface-raised)] self-start sm:self-end">
                             {member.photoUrl ? (
                                 <PhotoZoom
                                     src={member.photoUrl}
@@ -104,7 +104,7 @@ export default async function MemberProfilePage({
                                 />
                             ) : (
                                 <div
-                                    className="w-full h-full flex items-center justify-center text-[5rem] font-black tracking-[-0.04em]"
+                                    className="w-full h-full flex items-center justify-center text-[3rem] sm:text-[5rem] font-black tracking-[-0.04em]"
                                     style={{color: accentColor}}
                                 >
                                     {firstName.charAt(0)}
@@ -113,7 +113,7 @@ export default async function MemberProfilePage({
                         </div>
 
                         {/* Identity */}
-                        <div className="flex-1 pb-10 min-w-0">
+                        <div className="flex-1 pb-6 sm:pb-10 min-w-0">
                             <p
                                 className="text-[11px] font-bold tracking-[0.18em] uppercase mb-5"
                                 style={{color: accentColor}}
@@ -168,7 +168,7 @@ export default async function MemberProfilePage({
             </div>
 
             {/* ── Body ───────────────────────────────────────────────────── */}
-            <div className="mx-auto px-10 pb-20" style={{maxWidth: 1160}}>
+            <div className="mx-auto px-5 md:px-10 pb-20" style={{maxWidth: 1160}}>
 
                 {/* Favourite memory */}
                 {member.favouriteMemory && (
@@ -188,12 +188,12 @@ export default async function MemberProfilePage({
 
                 {/* ── Three-col info strip ─────────────────────────────── */}
                 <div
-                    className="grid border-b border-[var(--border)]"
+                    className="flex flex-col md:grid border-b border-[var(--border)]"
                     style={{gridTemplateColumns: `1fr${hasConnections ? " 1fr 1fr" : " 1fr"}`}}
                 >
                     {/* Journey */}
                     {member.statusHistory.length > 0 && (
-                        <div className="py-9 pr-10 border-r border-[var(--border)]">
+                        <div className="py-7 md:py-9 md:pr-10 border-b md:border-b-0 md:border-r border-[var(--border)]">
                             <MetaLabel>Journey</MetaLabel>
                             <div className="flex flex-col gap-[14px] mt-[18px]">
                                 {member.statusHistory.map((sh) => {
@@ -226,7 +226,7 @@ export default async function MemberProfilePage({
                     {/* Mandates */}
                     {member.mandateMemberships.length > 0 && (
                         <div
-                            className="py-9 px-10"
+                            className="py-7 md:py-9 md:px-10 border-b md:border-b-0"
                             style={{borderRight: hasConnections ? "1px solid var(--border)" : "none"}}
                         >
                             <MetaLabel>Mandates</MetaLabel>
@@ -260,7 +260,7 @@ export default async function MemberProfilePage({
 
                     {/* Buddy Network */}
                     {hasConnections && (
-                        <div className="py-9 pl-10">
+                        <div className="py-7 md:py-9 md:pl-10">
                             <MetaLabel>Network</MetaLabel>
                             <div className="flex flex-col gap-4 mt-[18px]">
                                 {member.buddyLinksAsNewbie.map(({buddy}) => (
@@ -305,28 +305,24 @@ export default async function MemberProfilePage({
                                 return (
                                     <div
                                         key={event.id}
-                                        className="grid items-center gap-4 py-[10px]"
-                                        style={{
-                                            gridTemplateColumns: "28px 1fr auto auto",
-                                            borderBottom: isLast ? "none" : "1px solid var(--border)",
-                                        }}
+                                        className="grid items-center gap-3 py-[10px] [grid-template-columns:1fr_auto] sm:[grid-template-columns:28px_1fr_auto_auto]"
+                                        style={{borderBottom: isLast ? "none" : "1px solid var(--border)"}}
                                     >
-                    <span className="text-[11px] text-[var(--text-4)] tabular-nums font-medium">
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
+                                        <span className="hidden sm:inline text-[11px] text-[var(--text-4)] tabular-nums font-medium">
+                                            {String(i + 1).padStart(2, "0")}
+                                        </span>
                                         <div className="flex items-center gap-2.5 min-w-0">
                                             <div className="size-1.5 rounded-full shrink-0" style={{background: dot}}/>
                                             <p className="text-sm font-semibold text-[var(--text-1)] truncate">
                                                 {event.title}
                                             </p>
                                         </div>
-                                        <span className="text-[11px] text-[var(--text-4)] capitalize whitespace-nowrap">
-                      {role.toLowerCase()}
-                    </span>
-                                        <span
-                                            className="text-[11px] text-[var(--text-4)] whitespace-nowrap tabular-nums">
-                      {formatDate(event.startsAt)}
-                    </span>
+                                        <span className="hidden sm:inline text-[11px] text-[var(--text-4)] capitalize whitespace-nowrap">
+                                            {role.toLowerCase()}
+                                        </span>
+                                        <span className="text-[11px] text-[var(--text-4)] whitespace-nowrap tabular-nums">
+                                            {formatDate(event.startsAt)}
+                                        </span>
                                     </div>
                                 );
                             })}

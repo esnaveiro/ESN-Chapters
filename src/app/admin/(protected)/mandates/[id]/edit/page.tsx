@@ -42,7 +42,7 @@ export default async function EditMandatePage({
                 ← Mandates
             </Link>
 
-            <div className="flex items-start justify-between gap-4 mb-8 mt-2">
+            <div className="flex flex-wrap items-start justify-between gap-4 mb-8 mt-2">
                 <h1 className="text-[28px] font-bold text-[var(--text-1)] tracking-[-0.02em] leading-none">
                     {mandate.name}
                 </h1>
@@ -53,7 +53,7 @@ export default async function EditMandatePage({
                 />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start">
                 <section>
                     <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--text-4)] mb-6">
                         Mandate details

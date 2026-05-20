@@ -10,7 +10,7 @@ export default async function MandatesPage() {
     });
 
     return (
-        <div className="px-6 lg:px-16 lg:h-[calc(100dvh-56px)] lg:overflow-hidden">
+        <div className="h-[calc(100dvh-112px)] overflow-hidden -mb-16 md:mb-0 lg:h-[calc(100dvh-56px)] lg:px-16">
             <MandateLedger mandates={mandates}/>
         </div>
     );

@@ -44,7 +44,7 @@ export default async function HomePage() {
                 className="flex flex-col justify-center bg-[var(--bg)]"
                 style={{minHeight: "calc(100vh - 80px - 228px)"}}
             >
-                <div className="mx-auto w-full px-10 pt-[72px] pb-[52px]" style={{maxWidth: 1100}}>
+                <div className="mx-auto w-full px-5 md:px-10 pt-[52px] md:pt-[72px] pb-[52px]" style={{maxWidth: 1100}}>
 
                     <p className="text-[11px] font-bold tracking-[0.16em] uppercase text-[var(--accent)] mb-3">
                         {APP_TITLE}

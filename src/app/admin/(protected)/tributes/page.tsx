@@ -19,7 +19,7 @@ export default async function AdminTributesPage() {
 
     return (
         <div>
-            <div className="flex items-start justify-between mb-8">
+            <div className="flex flex-wrap items-start justify-between gap-3 mb-8">
                 <h1 className="text-[28px] font-bold text-[var(--text-1)] tracking-[-0.02em] leading-none">
                     Tributes
                 </h1>

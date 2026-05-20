@@ -4,7 +4,7 @@ import {prisma} from "@/lib/prisma";
 import {getMandateColor} from "@/lib/utils";
 import {type BuddyConn, BuddyGraph, type YearBand} from "@/components/public/BuddyGraph";
 
-export default async function GraphPage() {
+export default async function NetworkPage() {
     const [members, mandates, rawLinks] = await Promise.all([
         prisma.member.findMany({
             include: {statusHistory: {where: {endedAt: null}}},
@@ -53,24 +53,16 @@ export default async function GraphPage() {
         newbieId: l.newbieId,
     }));
 
-    return (
-        <div style={{height: "calc(100dvh - 56px)"}}>
-            {yearBands.length === 0 ? (
-                <div style={{height: "100%", display: "flex", alignItems: "center", justifyContent: "center"}}>
-                    <p style={{
-                        fontSize: 13,
-                        letterSpacing: "0.12em",
-                        textTransform: "uppercase",
-                        color: "var(--text-4)"
-                    }}>
-                        No members yet
-                    </p>
-                </div>
-            ) : (
-                <BuddyGraph yearBands={yearBands} buddyLinks={buddyLinks}/>
-            )}
+    if (yearBands.length === 0) return (
+        <div style={{height: "calc(100dvh - 112px)", display: "flex", alignItems: "center", justifyContent: "center"}}
+             className="md:h-[calc(100dvh-56px)]">
+            <p style={{fontSize: 13, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--text-4)"}}>
+                No members yet
+            </p>
         </div>
     );
+
+    return <BuddyGraph yearBands={yearBands} buddyLinks={buddyLinks}/>;
 }
 
 function toAcademicYear(date: Date): string {

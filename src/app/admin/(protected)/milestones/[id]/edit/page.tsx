@@ -34,7 +34,7 @@ export default async function EditMilestonePage({
                 ← Milestones
             </Link>
 
-            <div className="flex items-start justify-between gap-4 mb-8 mt-2">
+            <div className="flex flex-wrap items-start justify-between gap-4 mb-8 mt-2">
                 <h1 className="text-[28px] font-bold text-[var(--text-1)] tracking-[-0.02em] leading-none">
                     {milestone.title}
                 </h1>

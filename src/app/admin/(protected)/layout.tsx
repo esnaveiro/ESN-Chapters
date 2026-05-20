@@ -18,7 +18,7 @@ export default async function AdminLayout({
         <div className="flex min-h-screen bg-[var(--bg)]">
             <AdminNav email={user.email ?? ""}/>
             <main className="flex-1 overflow-auto">
-                <div className="px-10 py-10">{children}</div>
+                <div className="px-4 pt-20 pb-20 md:px-10 md:py-10 md:pb-10">{children}</div>
             </main>
         </div>
     );

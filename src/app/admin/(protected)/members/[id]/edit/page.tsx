@@ -60,7 +60,7 @@ export default async function EditMemberPage({
             </Link>
 
             {/* Header */}
-            <div className="mb-10 mt-2 flex items-start justify-between gap-4">
+            <div className="mb-10 mt-2 flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <h1 className="text-[28px] font-bold text-[var(--text-1)] tracking-[-0.02em] leading-none mb-2">
                         {member.fullName}

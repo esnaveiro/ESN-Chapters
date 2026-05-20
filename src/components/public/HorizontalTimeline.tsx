@@ -65,6 +65,7 @@ function toX(date: Date, origin: Date) {
 
 const MINIMAP_W = 210;
 const MINIMAP_H = 48;
+const YEAR_HEADER_H = 34;
 
 export function HorizontalTimeline({mandates, milestones, events}: {
     mandates: SerMandate[];
@@ -75,6 +76,8 @@ export function HorizontalTimeline({mandates, milestones, events}: {
     const [tx, setTx] = useState(0);
     const [vw, setVw] = useState(1280);
     const [vh, setVh] = useState(800);
+    const [isMobile, setIsMobile] = useState(false);
+    const dragRef = useRef<{ startX: number; startScroll: number } | null>(null);
     const [activeMandateId, setActiveMandateId] = useState<string | null>(mandates[0]?.id ?? null);
     const [hoveredMemberId, setHoveredMemberId] = useState<string | null>(null);
     const [hoveredItem, setHoveredItem] = useState<
@@ -123,6 +126,7 @@ export function HorizontalTimeline({mandates, milestones, events}: {
         const update = () => {
             setVw(window.innerWidth);
             setVh(window.innerHeight);
+            setIsMobile(window.innerWidth < 768);
         };
         update();
         window.addEventListener("resize", update);
@@ -130,19 +134,43 @@ export function HorizontalTimeline({mandates, milestones, events}: {
     }, []);
 
     /* ── Scroll → translateX + active mandate ───────────────────── */
+    const MOBILE_NAV_H = 56;
     const scrollHeight = Math.max(totalWidth - vw * (1 - CURSOR_F) + 100, 600);
+    const maxTx = Math.max(0, totalWidth - vw * (1 - CURSOR_F));
+
+    function handleDragStart(e: React.PointerEvent) {
+        if (!isMobile) return;
+        e.currentTarget.setPointerCapture(e.pointerId);
+        const outerTop = outerRef.current
+            ? outerRef.current.getBoundingClientRect().top + window.scrollY
+            : 0;
+        dragRef.current = {startX: e.clientX, startScroll: window.scrollY - outerTop};
+    }
+
+    function handleDragMove(e: React.PointerEvent) {
+        if (!isMobile || !dragRef.current) return;
+        const dx = dragRef.current.startX - e.clientX;
+        const targetScroll = dragRef.current.startScroll + dx * (scrollHeight / maxTx);
+        const outerTop = outerRef.current
+            ? outerRef.current.getBoundingClientRect().top + window.scrollY
+            : 0;
+        window.scrollTo({top: outerTop + Math.max(0, Math.min(scrollHeight, targetScroll))});
+    }
+
+    function handleDragEnd() {
+        dragRef.current = null;
+    }
 
     const handleMinimapClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
         const rect = e.currentTarget.getBoundingClientRect();
         const fraction = (e.clientX - rect.left) / rect.width;
         const targetTx = fraction * totalWidth;
-        const maxTx = Math.max(0, totalWidth - vw * (1 - CURSOR_F));
         const progress = Math.min(1, Math.max(0, targetTx / maxTx));
         const outerTop = outerRef.current
             ? outerRef.current.getBoundingClientRect().top + window.scrollY
             : 0;
         window.scrollTo({top: outerTop + progress * scrollHeight, behavior: "smooth"});
-    }, [totalWidth, vw, scrollHeight]);
+    }, [totalWidth, maxTx, scrollHeight]);
 
     useEffect(() => {
         const handle = () => {
@@ -150,7 +178,6 @@ export function HorizontalTimeline({mandates, milestones, events}: {
             if (!outer) return;
             const scrolled = Math.max(0, -(outer.getBoundingClientRect().top - NAV_H));
             const progress = Math.min(1, scrolled / scrollHeight);
-            const maxTx = Math.max(0, totalWidth - vw * (1 - CURSOR_F));
             const newTx = progress * maxTx;
             setTx(newTx);
 
@@ -167,7 +194,7 @@ export function HorizontalTimeline({mandates, milestones, events}: {
         window.addEventListener("scroll", handle, {passive: true});
         handle();
         return () => window.removeEventListener("scroll", handle);
-    }, [scrollHeight, totalWidth, vw, origin, mandateRanges]);
+    }, [scrollHeight, maxTx, origin, mandateRanges]);
 
     /* ── Derived active info ────────────────────────────────────── */
     const activeMandateIdx = mandates.findIndex(m => m.id === activeMandateId);
@@ -198,14 +225,64 @@ export function HorizontalTimeline({mandates, milestones, events}: {
         >
             {/* ── Sticky viewport ───────────────────────────────────── */}
             <div
+                onPointerDown={handleDragStart}
+                onPointerMove={handleDragMove}
+                onPointerUp={handleDragEnd}
+                onPointerCancel={handleDragEnd}
                 style={{
                     position: "sticky",
                     top: NAV_H,
                     height: stickyH,
                     overflow: "hidden",
                     background: "var(--bg)",
+                    touchAction: isMobile ? "none" : "auto",
+                    cursor: isMobile ? "grab" : "default",
                 }}
             >
+
+                {/* ── Fixed year header ────────────────────────────────── */}
+                <div style={{
+                    position: "absolute",
+                    top: 0, left: 0, right: 0,
+                    height: YEAR_HEADER_H,
+                    borderBottom: "1px solid var(--border)",
+                    background: "var(--bg)",
+                    zIndex: 15,
+                    overflow: "hidden",
+                }}>
+                    {years.map(({year, x}) => {
+                        const screenX = x - tx;
+                        if (screenX < -60 || screenX > vw + 60) return null;
+                        return (
+                            <div
+                                key={year}
+                                style={{
+                                    position: "absolute",
+                                    left: screenX,
+                                    top: 0,
+                                    height: "100%",
+                                    transform: "translateX(-50%)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 5,
+                                    pointerEvents: "none",
+                                    userSelect: "none",
+                                }}
+                            >
+                                <div style={{width: 1, height: 10, background: "var(--border-strong)", flexShrink: 0}}/>
+                                <span style={{
+                                    fontSize: 11,
+                                    fontWeight: 600,
+                                    color: "var(--text-3)",
+                                    letterSpacing: "0.1em",
+                                    whiteSpace: "nowrap",
+                                }}>
+                                    {year}
+                                </span>
+                            </div>
+                        );
+                    })}
+                </div>
 
                 {/* ── Scrolling track layer ────────────────────────────── */}
                 <div
@@ -242,9 +319,9 @@ export function HorizontalTimeline({mandates, milestones, events}: {
                                     transition: "opacity 0.5s ease",
                                     pointerEvents: "none",
                                 }}/>
-                                {/* Member avatar stack — top-left */}
+                                {/* Member avatar stack — below year header */}
                                 <div style={{
-                                    position: "absolute", top: 10, left: 10,
+                                    position: "absolute", top: YEAR_HEADER_H + 8, left: 10,
                                     display: "flex",
                                     overflow: "visible",
                                 }}>
@@ -356,36 +433,16 @@ export function HorizontalTimeline({mandates, milestones, events}: {
                         }}
                     />
 
-                    {/* Year ticks */}
+                    {/* Year tick marks on rail (no labels — header handles those) */}
                     {years.map(({year, x}) => (
-                        <div key={year} style={{position: "absolute", left: x, top: trackY}}>
-              <span
-                  style={{
-                      position: "absolute",
-                      bottom: 14,
-                      left: "50%",
-                      transform: "translateX(-50%)",
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: "var(--text-4)",
-                      letterSpacing: "0.1em",
-                      whiteSpace: "nowrap",
-                      userSelect: "none",
-                  }}
-              >
-                {year}
-              </span>
-                            <div
-                                style={{
-                                    position: "absolute",
-                                    top: 3,
-                                    left: "50%",
-                                    transform: "translateX(-50%)",
-                                    width: 1,
-                                    height: 8,
-                                    background: "var(--border-strong)",
-                                }}
-                            />
+                        <div key={year} style={{
+                            position: "absolute", left: x, top: trackY,
+                        }}>
+                            <div style={{
+                                position: "absolute", top: 3,
+                                left: "50%", transform: "translateX(-50%)",
+                                width: 1, height: 8, background: "var(--border-strong)",
+                            }}/>
                         </div>
                     ))}
 
@@ -768,20 +825,22 @@ export function HorizontalTimeline({mandates, milestones, events}: {
                     </div>
                 </div>
 
-                {/* ── Active mandate info — fixed bottom-left ───────────── */}
+                {/* ── Active mandate info — fixed corner ───────────── */}
                 <div
                     style={{
                         position: "absolute",
-                        bottom: 64,
-                        left: 48,
+                        ...(isMobile
+                            ? {bottom: MOBILE_NAV_H + 12 + MINIMAP_H + 10, right: 12, textAlign: "right"}
+                            : {bottom: 64, left: 48}),
                         transition: "opacity 0.35s ease",
                         opacity: activeMandate ? 1 : 0,
                         pointerEvents: "none",
+                        maxWidth: isMobile ? Math.min(MINIMAP_W, vw - 24) : undefined,
                     }}
                 >
                     <div
                         style={{
-                            fontSize: "clamp(4rem, 6vw, 6.5rem)",
+                            fontSize: isMobile ? "2.2rem" : "clamp(4rem, 6vw, 6.5rem)",
                             fontWeight: 800,
                             letterSpacing: "-0.055em",
                             lineHeight: 0.9,
@@ -792,14 +851,17 @@ export function HorizontalTimeline({mandates, milestones, events}: {
                     >
                         {String(activeMandateIdx + 1).padStart(2, "0")}
                     </div>
-                    <div style={{height: 1, background: "var(--border)", margin: "14px 0"}}/>
+                    <div style={{height: 1, background: "var(--border)", margin: isMobile ? "8px 0" : "14px 0"}}/>
                     <p
                         style={{
-                            fontSize: 18,
+                            fontSize: isMobile ? 13 : 18,
                             fontWeight: 700,
                             color: "var(--text-1)",
                             letterSpacing: "-0.02em",
                             marginBottom: 4,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
                         }}
                     >
                         {activeMandate?.name}
@@ -814,7 +876,7 @@ export function HorizontalTimeline({mandates, milestones, events}: {
                     >
                         {activeMandate?._count.memberships} members · {activeMandate?._count.events} events
                     </p>
-                    {activeMandate && (
+                    {activeMandate && !isMobile && (
                         <Link
                             href={`/mandates/${activeMandate.id}`}
                             style={{
@@ -839,9 +901,9 @@ export function HorizontalTimeline({mandates, milestones, events}: {
                     onClick={handleMinimapClick}
                     style={{
                         position: "absolute",
-                        bottom: 20,
-                        right: 20,
-                        width: MINIMAP_W,
+                        bottom: isMobile ? MOBILE_NAV_H + 12 : 20,
+                        right: isMobile ? 12 : 20,
+                        width: isMobile ? Math.min(MINIMAP_W, vw - 24) : MINIMAP_W,
                         height: MINIMAP_H,
                         background: "var(--bg)",
                         border: "1px solid var(--border)",
@@ -911,8 +973,8 @@ export function HorizontalTimeline({mandates, milestones, events}: {
                     <div
                         style={{
                             position: "absolute",
-                            bottom: 84,
-                            right: 48,
+                            bottom: isMobile ? MOBILE_NAV_H + MINIMAP_H + 24 : 84,
+                            right: isMobile ? 12 : 48,
                             fontSize: 11,
                             color: "var(--text-4)",
                             letterSpacing: "0.12em",
@@ -921,7 +983,7 @@ export function HorizontalTimeline({mandates, milestones, events}: {
                             animation: "pulse 2s infinite",
                         }}
                     >
-                        Scroll to explore →
+                        {isMobile ? "Drag to explore →" : "Scroll to explore →"}
                     </div>
                 )}
             </div>

@@ -14,7 +14,7 @@ export default async function AdminMandatesPage() {
 
     return (
         <div>
-            <div className="flex items-start justify-between mb-6">
+            <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
                 <h1 className="text-[28px] font-bold text-[var(--text-1)] tracking-[-0.02em] leading-none">
                     Mandates
                 </h1>

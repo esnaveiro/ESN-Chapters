@@ -1,6 +1,6 @@
 "use client";
 
-import {useLayoutEffect, useMemo, useRef, useState} from "react";
+import {useEffect, useLayoutEffect, useMemo, useRef, useState} from "react";
 import Link from "next/link";
 import {MemberStatus} from "@/generated/prisma/enums";
 import {STATUS_LABELS} from "@/lib/utils";
@@ -31,25 +31,61 @@ const STATUS_COLOR: Record<MemberStatus, string> = {
 };
 
 /* ── Layout ─────────────────────────────────────────────────── */
-const COL_W = 200;   // column width
-const HDR_H = 56;    // coloured header height
-const MEM_R = 22;    // circle radius
-const MEM_STEP = 90;    // vertical spacing between members in a column
+const COL_W = 200;
+const HDR_H = 56;
+const MEM_R = 22;
+const MEM_STEP = 90;
+const NAV_H = 56;
+const MOBILE_NAV_H = 56;
 
 export function BuddyGraph({yearBands, buddyLinks}: Props) {
+    const outerRef = useRef<HTMLDivElement>(null);
     const wrapRef = useRef<HTMLDivElement>(null);
     const [selected, setSelected] = useState<BandMember | null>(null);
     const [hoveredYear, setHoveredYear] = useState<string | null>(null);
     const [h, setH] = useState(600);
+    const [scrollLeft, setScrollLeft] = useState(0);
+    const [tx, setTx] = useState(0);
+    const [isMobile, setIsMobile] = useState(false);
+    const [vw, setVw] = useState(1280);
+    const [vh, setVh] = useState(800);
+
+    const totalW = yearBands.length * COL_W;
+
+    const mobileViewH = Math.max(300, vh - NAV_H - MOBILE_NAV_H);
+    const maxTx = Math.max(0, totalW - vw);
+    const scrollHeight = maxTx + 200;
 
     useLayoutEffect(() => {
         const update = () => {
-            if (wrapRef.current) setH(wrapRef.current.clientHeight);
+            const mobile = window.innerWidth < 768;
+            setIsMobile(mobile);
+            setVw(window.innerWidth);
+            setVh(window.innerHeight);
+            if (mobile) {
+                setH(Math.max(300, window.innerHeight - NAV_H - MOBILE_NAV_H));
+            } else if (wrapRef.current) {
+                setH(wrapRef.current.clientHeight);
+            }
         };
         update();
         window.addEventListener("resize", update);
         return () => window.removeEventListener("resize", update);
     }, []);
+
+    useEffect(() => {
+        if (!isMobile) return;
+        const handle = () => {
+            const outer = outerRef.current;
+            if (!outer) return;
+            const scrolled = Math.max(0, -(outer.getBoundingClientRect().top - NAV_H));
+            const progress = scrollHeight > 0 ? Math.min(1, scrolled / scrollHeight) : 0;
+            setTx(progress * maxTx);
+        };
+        window.addEventListener("scroll", handle, {passive: true});
+        handle();
+        return () => window.removeEventListener("scroll", handle);
+    }, [isMobile, scrollHeight, maxTx]);
 
     /* ── Member (x, y) positions ────────────────────────────────── */
     const positions = useMemo(() => {
@@ -60,8 +96,6 @@ export function BuddyGraph({yearBands, buddyLinks}: Props) {
             const N = band.members.length;
             const groupH = (N - 1) * MEM_STEP;
             const base = HDR_H + (avail - groupH) / 2;
-            // Cycle through 5 distinct offsets so no two columns within a 5-mandate
-            // window share the same y — prevents arrival segments from overlapping
             const stagger = (col % 5) * (MEM_STEP / 3);
             const startY = Math.max(HDR_H + 8, Math.min(h - 8 - groupH, base + stagger));
 
@@ -89,9 +123,8 @@ export function BuddyGraph({yearBands, buddyLinks}: Props) {
         return ids;
     }, [hoveredYear, yearBands, buddyLinks]);
 
-    /* ── Per-link routing: stagger midX by column, exitY by buddy ── */
+    /* ── Per-link routing ────────────────────────────────────────── */
     const linkRouting = useMemo(() => {
-        // Pass 1 — unique midX per link within the same source column (sorted by target y)
         const byCol = new Map<number, { key: string; newbieId: string }[]>();
         for (const link of buddyLinks) {
             const pos = positions.get(link.buddyId);
@@ -110,7 +143,6 @@ export function BuddyGraph({yearBands, buddyLinks}: Props) {
             });
         }
 
-        // Pass 2 — unique exitY per link from the same buddy (fan within circle radius)
         const byBuddy = new Map<string, BuddyConn[]>();
         for (const link of buddyLinks) {
             if (!byBuddy.has(link.buddyId)) byBuddy.set(link.buddyId, []);
@@ -134,7 +166,6 @@ export function BuddyGraph({yearBands, buddyLinks}: Props) {
         return result;
     }, [buddyLinks, positions]);
 
-    /* ── Orthogonal path fanned from exitY ───────────────────────── */
     function linkPath(
         from: { x: number; y: number },
         to: { x: number; y: number },
@@ -158,269 +189,291 @@ export function BuddyGraph({yearBands, buddyLinks}: Props) {
         ].join(" ");
     }
 
-    const totalW = yearBands.length * COL_W;
+    /* ── Header offset: tx on mobile, scrollLeft on desktop ─────── */
+    const headerOffset = isMobile ? tx : scrollLeft;
 
+    /* ── Shared inner content ────────────────────────────────────── */
+    function renderContent() {
+        return (
+            <>
+                {/* ── Sticky column headers overlay ──────────────────── */}
+                <div style={{
+                    position: "absolute", top: 0, left: 0, right: 0, height: HDR_H,
+                    overflow: "hidden", zIndex: 10, pointerEvents: "none",
+                }}>
+                    <div style={{
+                        position: "absolute", top: 0, left: 0,
+                        width: totalW, height: HDR_H,
+                        display: "flex",
+                        transform: `translateX(-${headerOffset}px)`,
+                    }}>
+                        {yearBands.map((band, i) => (
+                            <div key={i} style={{
+                                width: COL_W, height: HDR_H, flexShrink: 0,
+                                background: band.color,
+                                borderRight: i < yearBands.length - 1 ? "1px solid rgba(255,255,255,0.18)" : "none",
+                                display: "flex", flexDirection: "column",
+                                alignItems: "center", justifyContent: "center", gap: 2,
+                            }}>
+                                <span style={{
+                                    fontSize: 12, fontWeight: 700, letterSpacing: "0.05em",
+                                    color: "rgba(255,255,255,0.95)",
+                                    fontFamily: "Inter, system-ui, sans-serif",
+                                }}>{band.academicYear}</span>
+                                <span style={{
+                                    fontSize: 9, color: "rgba(255,255,255,0.48)",
+                                    fontFamily: "Inter, system-ui, sans-serif",
+                                }}>{band.members.length} member{band.members.length !== 1 ? "s" : ""}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* ── SVG content ────────────────────────────────────── */}
+                {isMobile ? (
+                    <div style={{position: "absolute", inset: 0}}>
+                        <svg
+                            width={totalW} height={h}
+                            style={{display: "block", transform: `translateX(-${tx}px)`, willChange: "transform"}}
+                        >
+                            {renderSvgContent()}
+                        </svg>
+                    </div>
+                ) : (
+                    <div
+                        className="no-scrollbar"
+                        style={{width: "100%", height: "100%", overflowX: "auto", overflowY: "hidden"}}
+                        onScroll={(e) => setScrollLeft(e.currentTarget.scrollLeft)}
+                        onMouseMove={(e) => {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const x = e.clientX - rect.left + e.currentTarget.scrollLeft;
+                            const col = Math.floor(x / COL_W);
+                            const year = yearBands[col]?.academicYear ?? null;
+                            setHoveredYear(prev => prev === year ? prev : year);
+                        }}
+                        onMouseLeave={() => setHoveredYear(null)}
+                    >
+                        <svg width={totalW} height={h} style={{display: "block"}}>
+                            {renderSvgContent()}
+                        </svg>
+                    </div>
+                )}
+
+                {/* ── Member panel ───────────────────────────────────── */}
+                {selected && (() => {
+                    const sc = STATUS_COLOR[selected.status];
+                    const bandColor = yearBands.find(b => b.members.some(m => m.id === selected.id))?.color ?? sc;
+                    const year = toAcademicYear(selected.joinedAt);
+                    const [first, ...rest] = selected.fullName.trim().split(" ");
+                    const last = rest.join(" ");
+
+                    return (
+                        <div style={{
+                            position: "absolute", right: 16, top: "50%",
+                            transform: "translateY(-50%)",
+                            width: Math.min(252, vw - 32),
+                            maxHeight: "calc(100% - 48px)",
+                            background: "var(--bg)",
+                            borderRadius: 14,
+                            zIndex: 20,
+                            boxShadow: "0 16px 48px rgba(0,0,0,0.13), 0 2px 8px rgba(0,0,0,0.06)",
+                            overflow: "hidden",
+                            display: "flex", flexDirection: "column",
+                        }}>
+                            {selected.photoUrl && (
+                                <div style={{position: "relative", flexShrink: 0, overflow: "hidden", background: "#000"}}>
+                                    <img src={selected.photoUrl} alt=""
+                                         style={{width: "100%", display: "block", objectFit: "cover"}}/>
+                                    <div style={{position: "absolute", bottom: 0, left: 0, right: 0, height: 3, background: bandColor}}/>
+                                </div>
+                            )}
+                            {!selected.photoUrl && (
+                                <div style={{height: 3, flexShrink: 0, background: bandColor}}/>
+                            )}
+
+                            <div style={{padding: "14px 16px 18px", overflowY: "auto", flex: 1, position: "relative"}}>
+                                <button onClick={() => setSelected(null)} style={{
+                                    position: "absolute", top: 10, right: 12,
+                                    width: 22, height: 22, borderRadius: "50%",
+                                    background: "var(--surface-raised)",
+                                    border: "none", color: "var(--text-3)", fontSize: 14, lineHeight: 1,
+                                    cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                                }} aria-label="Close">×</button>
+
+                                <div style={{marginBottom: 8, paddingRight: 28}}>
+                                    <div style={{fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.05, color: "var(--text-1)"}}>{first}</div>
+                                    {last && <div style={{fontSize: 13, fontWeight: 500, color: "var(--text-3)", letterSpacing: "-0.01em", lineHeight: 1.2}}>{last}</div>}
+                                </div>
+
+                                <div style={{display: "flex", alignItems: "center", gap: 6, marginBottom: 14}}>
+                                    <span style={{width: 7, height: 7, borderRadius: "50%", background: sc, flexShrink: 0}}/>
+                                    <span style={{fontSize: 10, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase", color: sc}}>{STATUS_LABELS[selected.status]}</span>
+                                    <span style={{color: "var(--text-4)", fontSize: 10}}>·</span>
+                                    <span style={{fontSize: 10, color: "var(--text-4)"}}>{year}</span>
+                                </div>
+
+                                {selected.bio && (
+                                    <p style={{fontSize: 12, lineHeight: 1.7, color: "var(--text-2)", margin: "0 0 14px"}}>{selected.bio}</p>
+                                )}
+
+                                {selected.favouriteMemory && (
+                                    <div style={{marginBottom: 16}}>
+                                        <div style={{fontSize: 36, lineHeight: 0.75, fontFamily: "Georgia, serif", color: bandColor, opacity: 0.5, marginBottom: 4, userSelect: "none"}}>"</div>
+                                        <p style={{fontSize: 11.5, lineHeight: 1.65, fontStyle: "italic", color: "var(--text-3)", margin: 0}}>{selected.favouriteMemory}</p>
+                                    </div>
+                                )}
+
+                                <Link href={`/members/${selected.slug}`} style={{
+                                    fontSize: 12, fontWeight: 600, color: bandColor,
+                                    textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 3,
+                                }}>View profile →</Link>
+                            </div>
+                        </div>
+                    );
+                })()}
+            </>
+        );
+    }
+
+    function renderSvgContent() {
+        return (
+            <>
+                <defs>
+                    {yearBands.flatMap(band =>
+                        band.members.filter(m => m.photoUrl).map(m => (
+                            <clipPath key={`cp-${m.id}`} id={`cp-${m.id}`}>
+                                <circle r={MEM_R - 1}/>
+                            </clipPath>
+                        ))
+                    )}
+                </defs>
+
+                {/* Column backgrounds */}
+                {yearBands.map((band, i) => (
+                    <g key={`bg-${i}`}>
+                        {i > 0 && (
+                            <line x1={i * COL_W} y1={HDR_H} x2={i * COL_W} y2={h} stroke="var(--border)" strokeWidth={1}/>
+                        )}
+                        <rect
+                            x={i * COL_W} y={HDR_H}
+                            width={COL_W} height={h - HDR_H}
+                            fill={`${band.color}${i % 2 === 0 ? "09" : "0e"}`}
+                        />
+                    </g>
+                ))}
+
+                {/* Buddy lines */}
+                {buddyLinks.map(conn => {
+                    const from = positions.get(conn.buddyId);
+                    const to = positions.get(conn.newbieId);
+                    if (!from || !to) return null;
+
+                    const key = `${conn.buddyId}→${conn.newbieId}`;
+                    const routing = linkRouting.get(key);
+                    const exitY = routing?.exitY ?? from.y;
+                    const midX = routing?.midX ?? (Math.floor(from.x / COL_W) + 1) * COL_W;
+                    const srcBand = yearBands.find(b => b.members.some(m => m.id === conn.buddyId));
+                    const col = srcBand?.color ?? "#888";
+                    const isActive = !activeIds || (activeIds.has(conn.buddyId) && activeIds.has(conn.newbieId));
+                    const alpha = isActive ? (activeIds ? "bb" : "55") : "12";
+
+                    return (
+                        <path
+                            key={key}
+                            d={linkPath(from, to, exitY, midX)}
+                            fill="none"
+                            stroke={`${col}${alpha}`}
+                            strokeWidth={isActive && activeIds ? 2 : 1.5}
+                        />
+                    );
+                })}
+
+                {/* Member nodes */}
+                {yearBands.flatMap(band =>
+                    band.members.map(m => {
+                        const pos = positions.get(m.id);
+                        if (!pos) return null;
+                        const sc = STATUS_COLOR[m.status];
+                        const dimmed = activeIds && !activeIds.has(m.id);
+
+                        return (
+                            <g
+                                key={m.id}
+                                transform={`translate(${pos.x},${pos.y})`}
+                                style={{cursor: "pointer", opacity: dimmed ? 0.13 : 1, transition: "opacity 0.15s"}}
+                                onClick={() => setSelected(m)}
+                            >
+                                <circle r={MEM_R + 6} fill={`${sc}09`}/>
+                                <circle r={MEM_R} fill="var(--bg)" stroke={sc} strokeWidth={1.5}/>
+                                {m.photoUrl ? (
+                                    <image
+                                        href={m.photoUrl}
+                                        x={-(MEM_R - 1)} y={-(MEM_R - 1)}
+                                        width={(MEM_R - 1) * 2} height={(MEM_R - 1) * 2}
+                                        clipPath={`url(#cp-${m.id})`}
+                                        style={{pointerEvents: "none"}}
+                                    />
+                                ) : (
+                                    <text
+                                        textAnchor="middle" dominantBaseline="central"
+                                        fill={sc} opacity={0.85} fontSize={10} fontWeight={700}
+                                        style={{fontFamily: "Inter, system-ui, sans-serif", pointerEvents: "none"}}
+                                    >
+                                        {initials(m.fullName)}
+                                    </text>
+                                )}
+                                <text
+                                    y={MEM_R + 13} textAnchor="middle"
+                                    fill="var(--text-3)" fontSize={10} fontWeight={500}
+                                    style={{fontFamily: "Inter, system-ui, sans-serif", pointerEvents: "none"}}
+                                >
+                                    {m.fullName.split(" ")[0]}
+                                </text>
+                            </g>
+                        );
+                    })
+                )}
+
+                {/* Column headers in SVG (covered by HTML overlay) */}
+                {yearBands.map((band, i) => (
+                    <g key={`hdr-${i}`}>
+                        <rect x={i * COL_W} y={0} width={COL_W} height={HDR_H} fill={band.color}/>
+                        {i < yearBands.length - 1 && (
+                            <line x1={(i + 1) * COL_W} y1={0} x2={(i + 1) * COL_W} y2={HDR_H} stroke="rgba(255,255,255,0.18)" strokeWidth={1}/>
+                        )}
+                    </g>
+                ))}
+            </>
+        );
+    }
+
+    /* ── Mobile: tall outer div + sticky viewport ────────────────── */
+    if (isMobile) {
+        return (
+            <div ref={outerRef} style={{height: mobileViewH + scrollHeight}}>
+                <div
+                    ref={wrapRef}
+                    style={{
+                        position: "sticky",
+                        top: NAV_H,
+                        height: mobileViewH,
+                        overflow: "hidden",
+                        background: "var(--bg)",
+                    }}
+                >
+                    {renderContent()}
+                </div>
+            </div>
+        );
+    }
+
+    /* ── Desktop: fixed viewport height ─────────────────────────── */
     return (
         <div
             ref={wrapRef}
-            style={{height: "100%", background: "var(--bg)", overflow: "hidden", position: "relative"}}
+            style={{height: "calc(100dvh - 56px)", background: "var(--bg)", overflow: "hidden", position: "relative"}}
         >
-            {/* ── Horizontally scrollable SVG ────────────────────── */}
-            <div
-                className="no-scrollbar"
-                style={{width: "100%", height: "100%", overflowX: "auto", overflowY: "hidden"}}
-                onMouseMove={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const x = e.clientX - rect.left + e.currentTarget.scrollLeft;
-                    const col = Math.floor(x / COL_W);
-                    const year = yearBands[col]?.academicYear ?? null;
-                    setHoveredYear(prev => prev === year ? prev : year);
-                }}
-                onMouseLeave={() => setHoveredYear(null)}
-            >
-                <svg width={totalW} height={h} style={{display: "block"}}>
-
-                    {/* Clip paths for member photos */}
-                    <defs>
-                        {yearBands.flatMap(band =>
-                            band.members.filter(m => m.photoUrl).map(m => (
-                                <clipPath key={`cp-${m.id}`} id={`cp-${m.id}`}>
-                                    <circle r={MEM_R - 1}/>
-                                </clipPath>
-                            ))
-                        )}
-                    </defs>
-
-                    {/* ── Column backgrounds ─────────────────────────── */}
-                    {yearBands.map((band, i) => (
-                        <g key={`bg-${i}`}>
-                            {i > 0 && (
-                                <line
-                                    x1={i * COL_W} y1={HDR_H}
-                                    x2={i * COL_W} y2={h}
-                                    stroke="var(--border)" strokeWidth={1}
-                                />
-                            )}
-                            <rect
-                                x={i * COL_W} y={HDR_H}
-                                width={COL_W} height={h - HDR_H}
-                                fill={`${band.color}${i % 2 === 0 ? "09" : "0e"}`}
-                            />
-                        </g>
-                    ))}
-
-                    {/* ── Buddy lines ────────────────────────────────── */}
-                    {buddyLinks.map(conn => {
-                        const from = positions.get(conn.buddyId);
-                        const to = positions.get(conn.newbieId);
-                        if (!from || !to) return null;
-
-                        const key = `${conn.buddyId}→${conn.newbieId}`;
-                        const routing = linkRouting.get(key);
-                        const exitY = routing?.exitY ?? from.y;
-                        const midX = routing?.midX ?? (Math.floor(from.x / COL_W) + 1) * COL_W;
-                        const srcBand = yearBands.find(b => b.members.some(m => m.id === conn.buddyId));
-                        const col = srcBand?.color ?? "#888";
-                        const isActive = !activeIds || (activeIds.has(conn.buddyId) && activeIds.has(conn.newbieId));
-                        const alpha = isActive ? (activeIds ? "bb" : "55") : "12";
-
-                        return (
-                            <path
-                                key={key}
-                                d={linkPath(from, to, exitY, midX)}
-                                fill="none"
-                                stroke={`${col}${alpha}`}
-                                strokeWidth={isActive && activeIds ? 2 : 1.5}
-                            />
-                        );
-                    })}
-
-                    {/* ── Member nodes ───────────────────────────────── */}
-                    {yearBands.flatMap(band =>
-                        band.members.map(m => {
-                            const pos = positions.get(m.id);
-                            if (!pos) return null;
-                            const sc = STATUS_COLOR[m.status];
-                            const dimmed = activeIds && !activeIds.has(m.id);
-
-                            return (
-                                <g
-                                    key={m.id}
-                                    transform={`translate(${pos.x},${pos.y})`}
-                                    style={{cursor: "pointer", opacity: dimmed ? 0.13 : 1, transition: "opacity 0.15s"}}
-                                    onClick={() => setSelected(m)}
-                                >
-                                    <circle r={MEM_R + 6} fill={`${sc}09`}/>
-                                    <circle r={MEM_R} fill="var(--bg)" stroke={sc} strokeWidth={1.5}/>
-                                    {m.photoUrl ? (
-                                        <image
-                                            href={m.photoUrl}
-                                            x={-(MEM_R - 1)} y={-(MEM_R - 1)}
-                                            width={(MEM_R - 1) * 2} height={(MEM_R - 1) * 2}
-                                            clipPath={`url(#cp-${m.id})`}
-                                            style={{pointerEvents: "none"}}
-                                        />
-                                    ) : (
-                                        <text
-                                            textAnchor="middle" dominantBaseline="central"
-                                            fill={sc} opacity={0.85} fontSize={10} fontWeight={700}
-                                            style={{fontFamily: "Inter, system-ui, sans-serif", pointerEvents: "none"}}
-                                        >
-                                            {initials(m.fullName)}
-                                        </text>
-                                    )}
-                                    <text
-                                        y={MEM_R + 13} textAnchor="middle"
-                                        fill="var(--text-3)" fontSize={10} fontWeight={500}
-                                        style={{fontFamily: "Inter, system-ui, sans-serif", pointerEvents: "none"}}
-                                    >
-                                        {m.fullName.split(" ")[0]}
-                                    </text>
-                                </g>
-                            );
-                        })
-                    )}
-
-                    {/* ── Column headers (rendered last = on top) ────── */}
-                    {yearBands.map((band, i) => (
-                        <g key={`hdr-${i}`}>
-                            <rect x={i * COL_W} y={0} width={COL_W} height={HDR_H} fill={band.color}/>
-                            {i < yearBands.length - 1 && (
-                                <line
-                                    x1={(i + 1) * COL_W} y1={0}
-                                    x2={(i + 1) * COL_W} y2={HDR_H}
-                                    stroke="rgba(255,255,255,0.18)" strokeWidth={1}
-                                />
-                            )}
-                            <text
-                                x={i * COL_W + COL_W / 2} y={HDR_H * 0.38}
-                                textAnchor="middle" dominantBaseline="central"
-                                fill="rgba(255,255,255,0.95)" fontSize={12} fontWeight={700}
-                                style={{fontFamily: "Inter, system-ui, sans-serif", letterSpacing: "0.05em"}}
-                            >
-                                {band.academicYear}
-                            </text>
-                            <text
-                                x={i * COL_W + COL_W / 2} y={HDR_H * 0.72}
-                                textAnchor="middle" dominantBaseline="central"
-                                fill="rgba(255,255,255,0.48)" fontSize={9}
-                                style={{fontFamily: "Inter, system-ui, sans-serif"}}
-                            >
-                                {band.members.length} member{band.members.length !== 1 ? "s" : ""}
-                            </text>
-                        </g>
-                    ))}
-
-                </svg>
-            </div>
-
-            {/* ── Member panel ─────────────────────────────────────── */}
-            {selected && (() => {
-                const sc = STATUS_COLOR[selected.status];
-                const bandColor = yearBands.find(b => b.members.some(m => m.id === selected.id))?.color ?? sc;
-                const year = toAcademicYear(selected.joinedAt);
-                const [first, ...rest] = selected.fullName.trim().split(" ");
-                const last = rest.join(" ");
-
-                return (
-                    <div style={{
-                        position: "absolute", right: 24, top: "50%",
-                        transform: "translateY(-50%)",
-                        width: 252,
-                        maxHeight: "calc(100% - 48px)",
-                        background: "var(--bg)",
-                        borderRadius: 14,
-                        zIndex: 10,
-                        boxShadow: "0 16px 48px rgba(0,0,0,0.13), 0 2px 8px rgba(0,0,0,0.06)",
-                        overflow: "hidden",
-                        display: "flex", flexDirection: "column",
-                    }}>
-
-                        {/* ── Photo / colour header ── */}
-                        {selected.photoUrl && (
-                            <div style={{position: "relative", flexShrink: 0, overflow: "hidden", background: "#000"}}>
-                                <img src={selected.photoUrl} alt=""
-                                     style={{width: "100%", display: "block", objectFit: "cover"}}/>
-                                {/* Bottom bar */}
-                                <div style={{
-                                    position: "absolute",
-                                    bottom: 0,
-                                    left: 0,
-                                    right: 0,
-                                    height: 3,
-                                    background: bandColor
-                                }}/>
-                            </div>
-                        )}
-                        {!selected.photoUrl && (
-                            <div style={{height: 3, flexShrink: 0, background: bandColor}}/>
-                        )}
-
-                        {/* ── Body ── */}
-                        <div style={{padding: "14px 16px 18px", overflowY: "auto", flex: 1, position: "relative"}}>
-                            <button onClick={() => setSelected(null)} style={{
-                                position: "absolute", top: 10, right: 12,
-                                width: 22, height: 22, borderRadius: "50%",
-                                background: "var(--surface-raised)",
-                                border: "none", color: "var(--text-3)", fontSize: 14, lineHeight: 1,
-                                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                            }} aria-label="Close">×
-                            </button>
-
-                            {/* Name */}
-                            <div style={{marginBottom: 8, paddingRight: 28}}>
-                                <div style={{
-                                    fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em",
-                                    lineHeight: 1.05, color: "var(--text-1)"
-                                }}>{first}</div>
-                                {last && <div style={{
-                                    fontSize: 13, fontWeight: 500, color: "var(--text-3)",
-                                    letterSpacing: "-0.01em", lineHeight: 1.2
-                                }}>{last}</div>}
-                            </div>
-
-                            {/* Status · year */}
-                            <div style={{display: "flex", alignItems: "center", gap: 6, marginBottom: 14}}>
-                                <span
-                                    style={{width: 7, height: 7, borderRadius: "50%", background: sc, flexShrink: 0}}/>
-                                <span style={{
-                                    fontSize: 10, fontWeight: 700, letterSpacing: "0.09em",
-                                    textTransform: "uppercase", color: sc
-                                }}>{STATUS_LABELS[selected.status]}</span>
-                                <span style={{color: "var(--text-4)", fontSize: 10}}>·</span>
-                                <span style={{fontSize: 10, color: "var(--text-4)"}}>{year}</span>
-                            </div>
-
-                            {/* Bio */}
-                            {selected.bio && (
-                                <p style={{fontSize: 12, lineHeight: 1.7, color: "var(--text-2)", margin: "0 0 14px"}}>
-                                    {selected.bio}
-                                </p>
-                            )}
-
-                            {/* Favourite memory */}
-                            {selected.favouriteMemory && (
-                                <div style={{marginBottom: 16}}>
-                                    <div style={{
-                                        fontSize: 36, lineHeight: 0.75, fontFamily: "Georgia, serif",
-                                        color: bandColor, opacity: 0.5, marginBottom: 4, userSelect: "none"
-                                    }}>"
-                                    </div>
-                                    <p style={{
-                                        fontSize: 11.5, lineHeight: 1.65, fontStyle: "italic",
-                                        color: "var(--text-3)", margin: 0
-                                    }}>{selected.favouriteMemory}</p>
-                                </div>
-                            )}
-
-                            <Link href={`/members/${selected.slug}`} style={{
-                                fontSize: 12, fontWeight: 600, color: bandColor,
-                                textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 3,
-                            }}>View profile →</Link>
-                        </div>
-                    </div>
-                );
-            })()}
+            {renderContent()}
         </div>
     );
 }

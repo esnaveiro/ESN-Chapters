@@ -121,13 +121,13 @@ export function MembersRoster({members}: { members: Member[] }) {
                     )}
                 </div>
 
-                <div className="relative ml-auto">
+                <div className="relative ml-auto w-full sm:w-auto">
                     <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-4)] pointer-events-none"/>
                     <input
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         placeholder="Search…"
-                        className="pl-7 pr-3 py-1.5 w-[200px] rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] text-[13px] text-[var(--text-1)] placeholder-[var(--text-4)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-light)] transition-colors"
+                        className="pl-7 pr-3 py-1.5 w-full sm:w-[200px] rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] text-[13px] text-[var(--text-1)] placeholder-[var(--text-4)] focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-light)] transition-colors"
                     />
                 </div>
             </div>
@@ -173,14 +173,14 @@ export function MembersRoster({members}: { members: Member[] }) {
                                     <p className="text-[11px] text-[var(--text-4)]">{member.slug}</p>
                                 </div>
                                 <StatusBadge status={status}/>
-                                <span className="text-[11px] tabular-nums text-[var(--text-4)] shrink-0">
+                                <span className="hidden sm:inline text-[11px] tabular-nums text-[var(--text-4)] shrink-0">
                                     {new Date(member.joinedAt).getFullYear()}
                                 </span>
                                 <div className="flex items-center gap-3 shrink-0">
                                     <Link href={`/admin/members/${member.id}/edit`} className="text-[11px] text-[var(--text-3)] hover:text-[var(--text-1)] no-underline transition-colors">
                                         Edit
                                     </Link>
-                                    <Link href={`/members/${member.slug}`} target="_blank" className="text-[11px] text-[var(--text-4)] hover:text-[var(--text-1)] no-underline transition-colors">
+                                    <Link href={`/members/${member.slug}`} target="_blank" className="hidden sm:inline text-[11px] text-[var(--text-4)] hover:text-[var(--text-1)] no-underline transition-colors">
                                         View
                                     </Link>
                                 </div>
@@ -192,7 +192,7 @@ export function MembersRoster({members}: { members: Member[] }) {
 
             {/* Bulk action bar */}
             {selected.size > 0 && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2.5 rounded-[var(--radius-lg)] bg-[var(--text-1)] text-white shadow-lg text-[13px]">
+                <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2.5 rounded-[var(--radius-lg)] bg-[var(--text-1)] text-white shadow-lg text-[13px] max-w-[calc(100vw-32px)] whitespace-nowrap">
                     <span className="font-medium">{selected.size} selected</span>
                     <span className="opacity-30">·</span>
                     <button

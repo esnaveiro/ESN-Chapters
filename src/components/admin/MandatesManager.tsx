@@ -96,7 +96,7 @@ export function MandatesManager({mandates}: Props) {
                                 {mandate.name}
                             </p>
                         </div>
-                        <p className="text-[11px] text-[var(--text-4)] shrink-0">
+                        <p className="hidden sm:block text-[11px] text-[var(--text-4)] shrink-0">
                             {mandate._count.memberships} vol.
                             <span className="mx-1.5 text-[var(--border-strong)]">·</span>
                             {mandate._count.events} events
@@ -113,7 +113,7 @@ export function MandatesManager({mandates}: Props) {
 
             {/* Bulk action bar */}
             {selected.size > 0 && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2.5 rounded-[var(--radius-lg)] bg-[var(--text-1)] text-white shadow-lg text-[13px]">
+                <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2.5 rounded-[var(--radius-lg)] bg-[var(--text-1)] text-white shadow-lg text-[13px] max-w-[calc(100vw-32px)] whitespace-nowrap">
                     <span className="font-medium">{selected.size} selected</span>
                     <span className="opacity-30">·</span>
                     <button

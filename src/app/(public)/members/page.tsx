@@ -30,12 +30,14 @@ export default async function MembersPage() {
     }));
 
     return (
-        <div className="mx-auto px-10 pt-[52px] pb-[100px]" style={{maxWidth: 1280}}>
+        <div className="mx-auto px-5 md:px-10 pt-8 md:pt-[52px] pb-[100px]" style={{maxWidth: 1280}}>
 
             {/* ── Two-column layout: index + chapters ───────────────── */}
             <div className="flex items-start gap-14">
 
-                <YearbookIndex entries={indexEntries}/>
+                <div className="hidden md:block">
+                    <YearbookIndex entries={indexEntries}/>
+                </div>
 
                 <div className="flex-1 min-w-0 flex flex-col gap-[88px]">
                     {mandates.map((mandate, idx) => {
