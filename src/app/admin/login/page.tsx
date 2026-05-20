@@ -1,17 +1,17 @@
 "use client";
 
-import {useEffect, useState} from "react";
-import {createClient} from "@/lib/supabase/client";
-import {useRouter, useSearchParams} from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import {Button} from "@/components/ui/Button";
-import {SECTION_NAME} from "@/lib/config";
+import { Button } from "@/components/ui/Button";
+import { SECTION_NAME } from "@/lib/config";
 
-export default function LoginPage() {
-    const [email, setEmail] = useState("");
+function LoginForm() {
+    const [email, setEmail]       = useState("");
     const [password, setPassword] = useState("");
-    const [error, setError] = useState("");
-    const [loading, setLoading] = useState(false);
+    const [error, setError]       = useState("");
+    const [loading, setLoading]   = useState(false);
     const [checking, setChecking] = useState(true);
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -22,7 +22,7 @@ export default function LoginPage() {
 
     useEffect(() => {
         const supabase = createClient();
-        supabase.auth.getUser().then(({data: {user}}) => {
+        supabase.auth.getUser().then(({ data: { user } }) => {
             if (user) router.replace("/admin");
             else setChecking(false);
         });
@@ -33,7 +33,7 @@ export default function LoginPage() {
         setError("");
         setLoading(true);
         const supabase = createClient();
-        const {error} = await supabase.auth.signInWithPassword({email, password});
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
             setError(error.message);
             setLoading(false);
@@ -56,7 +56,7 @@ export default function LoginPage() {
                 <div className="mb-10 text-center">
                     <div className="inline-flex mb-4">
                         <Image src="/icons/icon-256.png" alt={SECTION_NAME} width={80} height={80}
-                               className="rounded-[var(--radius-lg)]"/>
+                               className="rounded-[var(--radius-lg)]" />
                     </div>
                     <h1 className="text-[20px] font-bold text-[var(--text-1)] tracking-[-0.02em] leading-none mb-1">
                         {SECTION_NAME}
@@ -67,8 +67,7 @@ export default function LoginPage() {
                 </div>
 
                 {/* Card */}
-                <div
-                    className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-7 shadow-sm">
+                <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-7 shadow-sm">
                     {linkError && (
                         <div className="mb-5 rounded-[var(--radius-md)] bg-red-50 border border-red-200 px-4 py-3">
                             <p className="text-[12px] text-red-700 leading-snug">{linkError}</p>
@@ -77,8 +76,7 @@ export default function LoginPage() {
 
                     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                         <div className="flex flex-col gap-1">
-                            <label htmlFor="email"
-                                   className="text-[12px] font-medium text-[var(--text-2)]">Email</label>
+                            <label htmlFor="email" className="text-[12px] font-medium text-[var(--text-2)]">Email</label>
                             <input
                                 id="email"
                                 type="email"
@@ -93,8 +91,7 @@ export default function LoginPage() {
                         </div>
 
                         <div className="flex flex-col gap-1">
-                            <label htmlFor="password"
-                                   className="text-[12px] font-medium text-[var(--text-2)]">Password</label>
+                            <label htmlFor="password" className="text-[12px] font-medium text-[var(--text-2)]">Password</label>
                             <input
                                 id="password"
                                 type="password"
@@ -117,5 +114,13 @@ export default function LoginPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense>
+            <LoginForm />
+        </Suspense>
     );
 }
