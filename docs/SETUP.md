@@ -1,6 +1,6 @@
 # Setup Guide
 
-This guide walks through everything needed to run your own ESN Chronicle instance — from a fresh fork to a live deployment.
+This guide walks through everything needed to run your own ESN Chapters instance — from a fresh fork to a live deployment.
 
 ## Prerequisites
 
@@ -13,8 +13,8 @@ This guide walks through everything needed to run your own ESN Chronicle instanc
 ## 1. Clone and install
 
 ```bash
-git clone https://github.com/your-org/esn-chronicle.git
-cd esn-chronicle
+git clone https://github.com/your-org/esn-chapters.git
+cd esn-chapters
 npm install
 ```
 
@@ -234,4 +234,4 @@ Check that your Supabase project URL matches the `*.supabase.co` pattern in `nex
 Confirm `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set correctly in your deployment environment — not just in `.env.local`.
 
 **`Module not found: @/generated/prisma`**
-Run `npx prisma generate` to regenerate the client after cloning or pulling schema changes.
+The Prisma client is not committed and must be generated. Run `npx prisma generate`. In production this runs automatically as part of `npm run build`.

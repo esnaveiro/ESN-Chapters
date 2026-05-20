@@ -1,6 +1,6 @@
 # Admin Guide
 
-This guide is for HR Managers and IT Managers using the ESN Chronicle admin panel. No technical background required.
+This guide is for HR Managers and IT Managers using the ESN Chapters admin panel. No technical background required.
 
 ---
 

@@ -14,8 +14,8 @@ Bug reports, feature ideas, and pull requests are welcome.
 ### Setup
 
 ```bash
-git clone https://github.com/your-org/esn-chronicle.git
-cd esn-chronicle
+git clone https://github.com/your-org/esn-chapters.git
+cd esn-chapters
 npm install
 cp .env.example .env.local   # fill in your Supabase credentials
 npx prisma migrate dev        # apply schema to your dev database
@@ -32,7 +32,7 @@ sync.
 ## Project structure
 
 ```
-esn-chronicle/
+esn-chapters/
 ├── prisma/
 │   ├── schema.prisma          # All models and enums
 │   └── migrations/            # Migration history (committed)
