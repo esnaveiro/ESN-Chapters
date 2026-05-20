@@ -2,7 +2,7 @@
 
 A living archive for ESN sections — preserving volunteers, mandates, events, and the connections between people across every year of a section's history.
 
-Built by [ESN Aveiro](https://esnaveiro.pt) and open-sourced so any ESN section can run their own instance.
+Built by [ESN Aveiro](https://esnaveiro.org) and open-sourced so any ESN section can run their own instance.
 
 ---
 
