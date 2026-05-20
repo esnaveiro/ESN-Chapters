@@ -103,22 +103,7 @@ export default async function MandatePage({
             <div style={{height: 3, background: color}}/>
 
             {/* ── Header ─────────────────────────────────────────────── */}
-            <div className="relative overflow-hidden border-b border-[var(--border)]">
-
-                {/* Ghost year */}
-                <div
-                    aria-hidden
-                    className="absolute pointer-events-none select-none whitespace-nowrap"
-                    style={{
-                        right: -20, top: "50%", transform: "translateY(-50%)",
-                        fontSize: "clamp(7rem,18vw,16rem)", fontWeight: 900,
-                        letterSpacing: "-0.05em", lineHeight: 1,
-                        color, opacity: 0.07,
-                    }}
-                >
-                    {mandate.academicYear}
-                </div>
-
+            <div className="border-b border-[var(--border)]">
                 <div className="mx-auto px-6 md:px-10" style={{maxWidth: 1160}}>
 
                     {/* Back + nav */}

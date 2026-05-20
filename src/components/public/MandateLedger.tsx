@@ -151,6 +151,7 @@ export function MandateLedger({mandates}: { mandates: Mandate[] }) {
                             ? getMandateColor(mandates[i - 1].colorIndex ?? i - 1, mandates[i - 1].customColor)
                             : null;
                         const isOpen = openId === m.id;
+                        const isLast = i === mandates.length - 1;
 
                         return (
                             <div
@@ -210,7 +211,7 @@ export function MandateLedger({mandates}: { mandates: Mandate[] }) {
                                         height: isOpen ? BODY_OPEN : CLOSED_H,
                                         transition: "height 0.44s cubic-bezier(0.16, 1, 0.3, 1)",
                                         background: color,
-                                        borderRadius: 12,
+                                        borderRadius: isMobile && isLast ? "12px 12px 0 0" : 12,
                                         overflow: "hidden",
                                     }}
                                 >
@@ -224,20 +225,6 @@ export function MandateLedger({mandates}: { mandates: Mandate[] }) {
                                                   style={{fontSize: 13}}>
                                                 {m._count.memberships} members · {m._count.events} events
                                             </span>
-                                            {isMobile ? (
-                                                <span className="ml-2 text-white/75 shrink-0 font-medium" style={{fontSize: 13}}>
-                                                    Tap to open →
-                                                </span>
-                                            ) : (
-                                                <Link
-                                                    href={`/mandates/${m.id}`}
-                                                    className="ml-2 text-white/75 hover:text-white transition-colors shrink-0 font-medium"
-                                                    style={{fontSize: 13}}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                >
-                                                    Open →
-                                                </Link>
-                                            )}
                                         </div>
 
                                         <div className="px-7 pb-7">

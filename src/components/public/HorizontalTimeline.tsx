@@ -78,6 +78,9 @@ export function HorizontalTimeline({mandates, milestones, events}: {
     const [vh, setVh] = useState(800);
     const [isMobile, setIsMobile] = useState(false);
     const dragRef = useRef<{ startX: number; startScroll: number } | null>(null);
+    const panRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const scrollHeightRef = useRef(0);
+    const maxTxRef = useRef(0);
     const [activeMandateId, setActiveMandateId] = useState<string | null>(mandates[0]?.id ?? null);
     const [hoveredMemberId, setHoveredMemberId] = useState<string | null>(null);
     const [hoveredItem, setHoveredItem] = useState<
@@ -137,6 +140,27 @@ export function HorizontalTimeline({mandates, milestones, events}: {
     const MOBILE_NAV_H = 56;
     const scrollHeight = Math.max(totalWidth - vw * (1 - CURSOR_F) + 100, 600);
     const maxTx = Math.max(0, totalWidth - vw * (1 - CURSOR_F));
+
+    useEffect(() => { scrollHeightRef.current = scrollHeight; }, [scrollHeight]);
+    useEffect(() => { maxTxRef.current = maxTx; }, [maxTx]);
+    useEffect(() => () => { if (panRef.current) clearInterval(panRef.current); }, []);
+
+    function startPan(direction: -1 | 1, txPerTick: number) {
+        if (panRef.current) clearInterval(panRef.current);
+        panRef.current = setInterval(() => {
+            const sh = scrollHeightRef.current;
+            const mt = maxTxRef.current;
+            if (mt === 0) return;
+            window.scrollBy({top: direction * txPerTick * (sh / mt)});
+        }, 50);
+    }
+
+    function stopPan() {
+        if (panRef.current !== null) {
+            clearInterval(panRef.current);
+            panRef.current = null;
+        }
+    }
 
     function handleDragStart(e: React.PointerEvent) {
         if (!isMobile) return;
@@ -986,8 +1010,55 @@ export function HorizontalTimeline({mandates, milestones, events}: {
                         {isMobile ? "Drag to explore →" : "Scroll to explore →"}
                     </div>
                 )}
+
+                {/* ── Mobile pan buttons ────────────────────────────────── */}
+                {isMobile && (
+                    <>
+                        <div style={{
+                            position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)",
+                            display: "flex", flexDirection: "column", gap: 6, zIndex: 25,
+                        }}>
+                            <PanButton onStart={() => startPan(-1, 300)} onStop={stopPan} label="«"/>
+                            <PanButton onStart={() => startPan(-1, 70)} onStop={stopPan} label="‹"/>
+                        </div>
+                        <div style={{
+                            position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
+                            display: "flex", flexDirection: "column", gap: 6, zIndex: 25,
+                        }}>
+                            <PanButton onStart={() => startPan(1, 70)} onStop={stopPan} label="›"/>
+                            <PanButton onStart={() => startPan(1, 300)} onStop={stopPan} label="»"/>
+                        </div>
+                    </>
+                )}
             </div>
         </div>
+    );
+}
+
+function PanButton({onStart, onStop, label}: { onStart: () => void; onStop: () => void; label: string }) {
+    return (
+        <button
+            onPointerDown={(e) => {
+                e.stopPropagation();
+                e.currentTarget.setPointerCapture(e.pointerId);
+                onStart();
+            }}
+            onPointerUp={(e) => { e.stopPropagation(); onStop(); }}
+            onPointerCancel={onStop}
+            style={{
+                width: 40, height: 40, borderRadius: "50%",
+                background: "var(--surface-raised)",
+                border: "1px solid var(--border)",
+                color: "var(--text-2)",
+                fontSize: 18,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer",
+                userSelect: "none",
+                WebkitUserSelect: "none",
+            } as React.CSSProperties}
+        >
+            {label}
+        </button>
     );
 }
 
