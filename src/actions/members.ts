@@ -245,11 +245,23 @@ export async function setBuddyLink(
     }
 }
 
+async function deleteMemberById(id: string) {
+    await prisma.$transaction([
+        prisma.statusHistory.deleteMany({where: {memberId: id}}),
+        prisma.mandateMembership.deleteMany({where: {memberId: id}}),
+        prisma.buddyLink.deleteMany({where: {OR: [{buddyId: id}, {newbieId: id}]}}),
+        prisma.tribute.deleteMany({where: {OR: [{recipientId: id}, {authorId: id}]}}),
+        prisma.memberBadge.deleteMany({where: {memberId: id}}),
+        prisma.eventParticipation.deleteMany({where: {memberId: id}}),
+        prisma.member.delete({where: {id}}),
+    ]);
+}
+
 export async function deleteMember(id: string): Promise<ActionResult> {
     try {
         await requireAuth();
         const member = await prisma.member.findUnique({where: {id}, select: {slug: true}});
-        await prisma.member.delete({where: {id}});
+        await deleteMemberById(id);
         revalidatePath("/members");
         revalidatePath(`/members/${member?.slug}`);
         revalidatePath("/admin/members");
@@ -262,7 +274,9 @@ export async function deleteMember(id: string): Promise<ActionResult> {
 export async function deleteMembers(ids: string[]): Promise<ActionResult> {
     try {
         await requireAuth();
-        await prisma.member.deleteMany({where: {id: {in: ids}}});
+        for (const id of ids) {
+            await deleteMemberById(id);
+        }
         revalidatePath("/members");
         revalidatePath("/admin/members");
         return {success: true, data: undefined};
