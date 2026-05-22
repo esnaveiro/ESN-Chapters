@@ -3,7 +3,7 @@
 import {useEffect, useRef, useState} from "react";
 import {useRouter} from "next/navigation";
 import {Button} from "@/components/ui/Button";
-import {Select} from "@/components/ui/Select";
+import {Combobox} from "@/components/ui/Combobox";
 import {addMemberToMandate, removeMemberFromMandate, reorderMandateMemberships} from "@/actions/mandates";
 
 type Membership = {
@@ -152,10 +152,10 @@ export function MandateMembersManager({mandateId, memberships, allMembers}: Prop
             {/* Add form */}
             {adding ? (
                 <div className="flex flex-col gap-3 pt-2">
-                    <Select
+                    <Combobox
                         value={memberId}
                         onValueChange={setMemberId}
-                        placeholder="— select member —"
+                        placeholder="— search member —"
                         options={available.map((m) => ({value: m.id, label: m.fullName}))}
                     />
                     <input
