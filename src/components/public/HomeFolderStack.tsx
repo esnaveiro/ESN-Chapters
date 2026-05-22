@@ -28,7 +28,7 @@ type MandateSummary = {
     academicYear: string;
     colorIndex: number;
     customColor?: string | null;
-    memberships: Array<{ roleTitle: string; member: MemberPreview }>;
+    memberships: Array<{ roleTitles: string[]; member: MemberPreview }>;
 };
 
 export function HomeFolderStack({
@@ -175,7 +175,7 @@ export function HomeFolderStack({
                                             className="grid gap-x-5 gap-y-8"
                                             style={{gridTemplateColumns: "repeat(auto-fill, minmax(148px, 1fr))"}}
                                         >
-                                            {latestMandate.memberships.map(({member, roleTitle}, cardIdx) => {
+                                            {latestMandate.memberships.map(({member, roleTitles}, cardIdx) => {
                                                 const initials = member.fullName.split(" ").map(n => n[0]).slice(0, 2).join("");
                                                 const cardDelay = cardIdx < 8 ? 820 + cardIdx * 70 : 1380;
                                                 return (
@@ -209,7 +209,7 @@ export function HomeFolderStack({
                                                                     {member.fullName}
                                                                 </p>
                                                                 <p className="text-[10px] font-medium text-[var(--text-4)] mt-[3px] tracking-[0.04em]">
-                                                                    {roleTitle}
+                                                                    {roleTitles.join(" · ")}
                                                                 </p>
                                                             </div>
                                                         </Link>

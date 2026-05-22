@@ -75,7 +75,7 @@ export default async function MandatePage({
     // Group members by department; null/empty → labelled "General"
     const deptMap = new Map<string, typeof mandate.memberships>();
     for (const ms of mandate.memberships) {
-        const key = ms.department?.trim() || "General";
+        const key = ms.departments[0]?.trim() || "General";
         if (!deptMap.has(key)) deptMap.set(key, []);
         deptMap.get(key)!.push(ms);
     }
@@ -197,7 +197,7 @@ export default async function MandatePage({
                                             className="grid gap-x-4 gap-y-6"
                                             style={{gridTemplateColumns: "repeat(auto-fill, minmax(148px, 1fr))"}}
                                         >
-                                            {members.map(({member, roleTitle}) => {
+                                            {members.map(({member, roleTitles}) => {
                                                 const initials = member.fullName.split(" ").map((n: string) => n[0]).slice(0, 2).join("");
                                                 return (
                                                     <Link
@@ -230,9 +230,9 @@ export default async function MandatePage({
                                                             <p className="text-xs font-semibold text-[var(--text-1)] leading-[1.35] tracking-[-0.01em]">
                                                                 {member.fullName}
                                                             </p>
-                                                            {roleTitle && (
+                                                            {roleTitles.length > 0 && (
                                                                 <p className="text-[10px] font-medium text-[var(--text-4)] mt-[3px] tracking-[0.04em]">
-                                                                    {roleTitle}
+                                                                    {roleTitles.join(" · ")}
                                                                 </p>
                                                             )}
                                                         </div>

@@ -8,8 +8,8 @@ import {addMemberToMandate, removeMemberFromMandate, reorderMandateMemberships} 
 
 type Membership = {
     id: string;
-    department: string;
-    roleTitle: string;
+    departments: string[];
+    roleTitles: string[];
     member: { id: string; fullName: string };
 };
 
@@ -134,7 +134,7 @@ export function MandateMembersManager({mandateId, memberships, allMembers}: Prop
                                     {ms.member.fullName}
                                 </p>
                                 <p className="text-[11px] text-[var(--text-4)]">
-                                    {ms.roleTitle}{ms.roleTitle && ms.department ? " · " : ""}{ms.department}
+                                    {[...ms.roleTitles, ...ms.departments].join(" · ")}
                                 </p>
                             </div>
                             <button
@@ -161,13 +161,13 @@ export function MandateMembersManager({mandateId, memberships, allMembers}: Prop
                     <input
                         value={department}
                         onChange={(e) => setDepartment(e.target.value)}
-                        placeholder="Department (e.g. IT, HR, Events) — optional"
+                        placeholder="Departments — comma-separated (e.g. Board, Cultural)"
                         className={inputBase}
                     />
                     <input
                         value={roleTitle}
                         onChange={(e) => setRoleTitle(e.target.value)}
-                        placeholder="Role title (e.g. IT Manager, Member) — optional"
+                        placeholder="Roles — comma-separated (e.g. IT Manager, Cultural Coordinator)"
                         className={inputBase}
                     />
                     {error && <p className="text-[12px] text-red-600">{error}</p>}

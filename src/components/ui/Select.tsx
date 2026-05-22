@@ -77,7 +77,7 @@ export function Select({
                             "data-[side=bottom]:slide-in-from-top-2"
                         )}
                     >
-                        <RadixSelect.Viewport className="p-1">
+                        <RadixSelect.Viewport className="p-1 max-h-[260px] overflow-y-auto">
                             {options.map((opt) => (
                                 <RadixSelect.Item
                                     key={opt.value}

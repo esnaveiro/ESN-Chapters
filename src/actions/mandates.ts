@@ -110,11 +110,15 @@ export async function deleteMandates(ids: string[]): Promise<ActionResult> {
     }
 }
 
+function parseMulti(value: string): string[] {
+    return value.split(",").map(s => s.trim()).filter(Boolean);
+}
+
 export async function addMemberToMandate(
     mandateId: string,
     memberId: string,
-    department: string,
-    roleTitle: string
+    departments: string,
+    roleTitles: string
 ): Promise<ActionResult> {
     try {
         await requireAuth();
@@ -124,7 +128,7 @@ export async function addMemberToMandate(
         });
         const sortOrder = (max._max.sortOrder ?? -1) + 1;
         await prisma.mandateMembership.create({
-            data: {mandateId, memberId, department, roleTitle, sortOrder},
+            data: {mandateId, memberId, departments: parseMulti(departments), roleTitles: parseMulti(roleTitles), sortOrder},
         });
         revalidatePath(`/mandates/${mandateId}`);
         revalidatePath("/admin/mandates");

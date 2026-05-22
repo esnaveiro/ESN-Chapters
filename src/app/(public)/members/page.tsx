@@ -83,7 +83,7 @@ export default async function MembersPage() {
                                     className="grid gap-x-5 gap-y-8"
                                     style={{gridTemplateColumns: "repeat(auto-fill, minmax(148px, 1fr))"}}
                                 >
-                                    {mandate.memberships.map(({member, roleTitle}) => {
+                                    {mandate.memberships.map(({member, roleTitles}) => {
                                         const status = member.statusHistory.find(s => !s.endedAt)?.status ?? ("NEWBIE" as MemberStatus);
                                         const initials = member.fullName.split(" ").map(n => n[0]).slice(0, 2).join("");
 
@@ -121,7 +121,7 @@ export default async function MembersPage() {
                                                         {member.fullName}
                                                     </p>
                                                     <p className="text-[10px] font-medium text-[var(--text-4)] mt-[3px] tracking-[0.04em]">
-                                                        {roleTitle}
+                                                        {roleTitles.join(" · ")}
                                                     </p>
                                                 </div>
                                             </Link>

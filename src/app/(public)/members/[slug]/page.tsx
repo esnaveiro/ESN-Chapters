@@ -231,7 +231,7 @@ export default async function MemberProfilePage({
                         >
                             <MetaLabel>Mandates</MetaLabel>
                             <div className="flex flex-col gap-[14px] mt-[18px]">
-                                {member.mandateMemberships.map(({id, mandate, roleTitle, department}) => {
+                                {member.mandateMemberships.map(({id, mandate, roleTitles, departments}) => {
                                     const mc = getMandateColor(mandate.colorIndex, mandate.customColor);
                                     return (
                                         <Link key={id} href={`/mandates/${mandate.id}`}
@@ -243,12 +243,12 @@ export default async function MemberProfilePage({
                                                     <p className="text-[13px] font-semibold text-[var(--text-1)]">
                                                         {mandate.academicYear}
                                                     </p>
-                                                    {roleTitle && (
-                                                        <p className="text-[11px] text-[var(--text-4)]">{roleTitle}</p>
+                                                    {roleTitles.length > 0 && (
+                                                        <p className="text-[11px] text-[var(--text-4)]">{roleTitles.join(" · ")}</p>
                                                     )}
                                                 </div>
-                                                {department && (
-                                                    <p className="text-[11px] text-[var(--text-4)] mt-px">{department}</p>
+                                                {departments.length > 0 && (
+                                                    <p className="text-[11px] text-[var(--text-4)] mt-px">{departments.join(" · ")}</p>
                                                 )}
                                             </div>
                                         </Link>
