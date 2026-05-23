@@ -16,7 +16,7 @@ const STATUS_OPTIONS = Object.values(MemberStatus).map((s) => ({
     label: STATUS_LABELS[s],
 }));
 
-type Entry = { status: MemberStatus; startedAt: string };
+type Entry = { status: MemberStatus; startedAt: string; semester?: number | null };
 
 type Props = {
     memberId: string;
@@ -29,14 +29,14 @@ export function StatusHistoryManager({memberId, initialEntries}: Props) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-    function update(i: number, field: keyof Entry, value: string) {
+    function update(i: number, field: keyof Entry, value: string | number | null) {
         setEntries((prev) =>
             prev.map((e, idx) => (idx === i ? {...e, [field]: value} : e))
         );
     }
 
     function add() {
-        setEntries((prev) => [...prev, {status: "NEWBIE" as MemberStatus, startedAt: ""}]);
+        setEntries((prev) => [...prev, {status: "NEWBIE" as MemberStatus, startedAt: "", semester: null}]);
     }
 
     function remove(i: number) {
@@ -64,18 +64,35 @@ export function StatusHistoryManager({memberId, initialEntries}: Props) {
     return (
         <div className="flex flex-col gap-3">
             {entries.map((entry, i) => (
-                <div key={i} className="grid grid-cols-[1fr_1fr_auto] items-center gap-2">
+                <div key={i} className="grid grid-cols-[1fr_1fr_auto_auto] items-center gap-2">
                     <Select
                         value={entry.status}
                         onValueChange={(v) => update(i, "status", v as MemberStatus)}
                         options={STATUS_OPTIONS}
                     />
                     <input
-                        type="date"
-                        value={entry.startedAt}
+                        type="month"
+                        value={entry.startedAt.substring(0, 7)}
                         onChange={(e) => update(i, "startedAt", e.target.value)}
                         className={inputBase}
                     />
+                    <div className="flex rounded-[var(--radius-md)] border border-[var(--border)] overflow-hidden text-[11px] font-semibold shrink-0">
+                        {[1, 2].map((s) => (
+                            <button
+                                key={s}
+                                type="button"
+                                onClick={() => update(i, "semester", entry.semester === s ? null : s)}
+                                className="px-2 py-1.5 transition-colors"
+                                style={{
+                                    background: entry.semester === s ? "var(--accent)" : "var(--surface)",
+                                    color: entry.semester === s ? "white" : "var(--text-3)",
+                                    borderRight: s === 1 ? "1px solid var(--border)" : undefined,
+                                }}
+                            >
+                                S{s}
+                            </button>
+                        ))}
+                    </div>
                     {entries.length > 1 && (
                         <button
                             type="button"

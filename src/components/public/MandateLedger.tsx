@@ -21,7 +21,7 @@ const TAB_H = 42;
 const TAB_W = 158;
 const TAB_STEP = 44;
 const INITIAL_OFFSET = 20;
-const BODY_OPEN = 400;
+const BODY_OPEN = 460;
 const TAB_OVERLAP = 8;
 
 function tabClipPath(w: number) {
@@ -295,16 +295,16 @@ export function MandateLedger({mandates}: { mandates: Mandate[] }) {
                                             <div className="px-7 pb-7">
                                                 {m.photoUrl ? (
                                                     <div className="relative overflow-hidden mb-5"
-                                                         style={{borderRadius: 10, height: 190}}>
+                                                         style={{borderRadius: 10, height: 240}}>
                                                         <Image src={m.photoUrl} alt={m.name} fill
                                                                className="object-cover"
                                                                style={{objectPosition: `${m.photoFocusX}% ${m.photoFocusY}%`}}/>
                                                         <div className="absolute inset-0"
-                                                             style={{background: "rgba(0,0,0,0.12)"}}/>
+                                                             style={{background: "rgba(20,20,20,0.32)"}}/>
                                                     </div>
                                                 ) : (
                                                     <div className="mb-5 flex items-center justify-center"
-                                                         style={{height: 190, borderRadius: 10, background: "rgba(255,255,255,0.1)"}}>
+                                                         style={{height: 240, borderRadius: 10, background: "rgba(255,255,255,0.1)"}}>
                                                         <span className="text-white/25 text-sm">No photo</span>
                                                     </div>
                                                 )}

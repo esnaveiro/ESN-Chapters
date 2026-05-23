@@ -7,6 +7,11 @@ import {revalidatePath} from "next/cache";
 import {slugify} from "@/lib/utils";
 import {ActionResult} from "@/types";
 
+/* Accepts YYYY-MM or YYYY-MM-DD, always returns YYYY-MM-01 */
+function toDay(s: string): string {
+    return s.length === 7 ? `${s}-01` : s;
+}
+
 async function requireAuth() {
     const supabase = await createClient();
     const {
@@ -34,6 +39,7 @@ async function uniqueSlug(name: string, excludeId?: string): Promise<string> {
 export type StatusEntry = {
     status: MemberStatus;
     startedAt: string;
+    semester?: number | null;
 };
 
 export type MemberFormData = {
@@ -56,7 +62,7 @@ export async function createMember(
         const slug = await uniqueSlug(data.fullName);
 
         const sorted = [...data.statusHistory].sort(
-            (a, b) => new Date(a.startedAt).getTime() - new Date(b.startedAt).getTime()
+            (a, b) => new Date(toDay(a.startedAt)).getTime() - new Date(toDay(b.startedAt)).getTime()
         );
 
         const member = await prisma.member.create({
@@ -66,14 +72,15 @@ export async function createMember(
                 bio: data.bio || null,
                 favouriteMemory: data.favouriteMemory || null,
                 linkedinUrl: data.linkedinUrl || null,
-                joinedAt: new Date(data.joinedAt),
+                joinedAt: new Date(toDay(data.joinedAt)),
                 photoUrl: data.photoUrl || null,
                 isAlumni: sorted.at(-1)?.status === "ALUMNI",
                 statusHistory: {
                     create: sorted.map((entry, i) => ({
                         status: entry.status,
-                        startedAt: new Date(entry.startedAt),
-                        endedAt: sorted[i + 1] ? new Date(sorted[i + 1].startedAt) : null,
+                        semester: entry.semester ?? null,
+                        startedAt: new Date(toDay(entry.startedAt)),
+                        endedAt: sorted[i + 1] ? new Date(toDay(sorted[i + 1].startedAt)) : null,
                     })),
                 },
             },
@@ -128,7 +135,7 @@ export async function updateMember(
                 bio: data.bio ?? member.bio,
                 favouriteMemory: data.favouriteMemory ?? member.favouriteMemory,
                 linkedinUrl: data.linkedinUrl ?? member.linkedinUrl,
-                ...(data.joinedAt && {joinedAt: new Date(data.joinedAt)}),
+                ...(data.joinedAt && {joinedAt: new Date(toDay(data.joinedAt))}),
                 ...(data.photoUrl !== undefined && {photoUrl: data.photoUrl}),
             },
         });
@@ -181,12 +188,12 @@ export async function promoteMember(
 
 export async function setStatusHistory(
     memberId: string,
-    entries: { status: MemberStatus; startedAt: string }[]
+    entries: StatusEntry[]
 ): Promise<ActionResult> {
     try {
         await requireAuth();
         const sorted = [...entries].sort(
-            (a, b) => new Date(a.startedAt).getTime() - new Date(b.startedAt).getTime()
+            (a, b) => new Date(toDay(a.startedAt)).getTime() - new Date(toDay(b.startedAt)).getTime()
         );
         await prisma.$transaction([
             prisma.statusHistory.deleteMany({where: {memberId}}),
@@ -194,8 +201,9 @@ export async function setStatusHistory(
                 data: sorted.map((entry, i) => ({
                     memberId,
                     status: entry.status,
-                    startedAt: new Date(entry.startedAt),
-                    endedAt: sorted[i + 1] ? new Date(sorted[i + 1].startedAt) : null,
+                    semester: entry.semester ?? null,
+                    startedAt: new Date(toDay(entry.startedAt)),
+                    endedAt: sorted[i + 1] ? new Date(toDay(sorted[i + 1].startedAt)) : null,
                 })),
             }),
             ...(sorted.at(-1)?.status === "ALUMNI"

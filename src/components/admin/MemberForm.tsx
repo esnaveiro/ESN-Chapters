@@ -7,7 +7,7 @@ import {Input, Textarea} from "@/components/ui/Input";
 import {Select} from "@/components/ui/Select";
 import {Button} from "@/components/ui/Button";
 import {STATUS_LABELS} from "@/lib/utils";
-import {createMember, MemberFormData, StatusEntry, updateMember} from "@/actions/members";
+import {createMember, MemberFormData, setStatusHistory, StatusEntry, updateMember} from "@/actions/members";
 import {PhotoUpload} from "./PhotoUpload";
 
 const inputBase =
@@ -19,6 +19,7 @@ type Props = {
     mode: "create" | "edit";
     memberId?: string;
     defaultValues?: Partial<MemberFormData & { id: string }>;
+    initialStatusHistory?: StatusEntry[];
     members?: MemberOption[];
 };
 
@@ -34,7 +35,7 @@ function StatusHistoryBuilder({
     entries: StatusEntry[];
     onChange: (entries: StatusEntry[]) => void;
 }) {
-    function update(i: number, field: keyof StatusEntry, value: string) {
+    function update(i: number, field: keyof StatusEntry, value: string | number | null) {
         const next = entries.map((e, idx) =>
             idx === i ? {...e, [field]: value} : e
         );
@@ -42,7 +43,7 @@ function StatusHistoryBuilder({
     }
 
     function add() {
-        onChange([...entries, {status: "NEWBIE" as MemberStatus, startedAt: ""}]);
+        onChange([...entries, {status: "NEWBIE" as MemberStatus, startedAt: "", semester: null}]);
     }
 
     function remove(i: number) {
@@ -52,18 +53,35 @@ function StatusHistoryBuilder({
     return (
         <div className="flex flex-col gap-2">
             {entries.map((entry, i) => (
-                <div key={i} className="grid grid-cols-[1fr_1fr_auto] items-center gap-2">
+                <div key={i} className="grid grid-cols-[1fr_1fr_auto_auto] items-center gap-2">
                     <Select
                         value={entry.status}
                         onValueChange={(v) => update(i, "status", v)}
                         options={STATUS_OPTIONS}
                     />
                     <input
-                        type="date"
-                        value={entry.startedAt}
+                        type="month"
+                        value={entry.startedAt.substring(0, 7)}
                         onChange={(e) => update(i, "startedAt", e.target.value)}
                         className={inputBase}
                     />
+                    <div className="flex rounded-[var(--radius-md)] border border-[var(--border)] overflow-hidden text-[11px] font-semibold shrink-0">
+                        {[1, 2].map((s) => (
+                            <button
+                                key={s}
+                                type="button"
+                                onClick={() => update(i, "semester", entry.semester === s ? null : s)}
+                                className="px-2 py-1.5 transition-colors"
+                                style={{
+                                    background: entry.semester === s ? "var(--accent)" : "var(--surface)",
+                                    color: entry.semester === s ? "white" : "var(--text-3)",
+                                    borderRight: s === 1 ? "1px solid var(--border)" : undefined,
+                                }}
+                            >
+                                S{s}
+                            </button>
+                        ))}
+                    </div>
                     {entries.length > 1 && (
                         <button
                             type="button"
@@ -86,12 +104,12 @@ function StatusHistoryBuilder({
     );
 }
 
-export function MemberForm({mode, memberId, defaultValues, members = []}: Props) {
+export function MemberForm({mode, memberId, defaultValues, initialStatusHistory, members = []}: Props) {
     const router = useRouter();
     const [photoUrl, setPhotoUrl] = useState(defaultValues?.photoUrl ?? "");
-    const [statusHistory, setStatusHistory] = useState<StatusEntry[]>([
-        {status: "NEWBIE", startedAt: ""},
-    ]);
+    const [statusHistory, setStatusHistoryState] = useState<StatusEntry[]>(
+        initialStatusHistory ?? [{status: "NEWBIE", startedAt: "", semester: null}]
+    );
     const [buddyId, setBuddyId] = useState("");
     const [newbieIds, setNewbieIds] = useState<string[]>([]);
     const [addingNewbie, setAddingNewbie] = useState(false);
@@ -133,19 +151,20 @@ export function MemberForm({mode, memberId, defaultValues, members = []}: Props)
                 return;
             }
         } else {
-            const result = await updateMember(memberId!, {
-                fullName: fd.get("fullName") as string,
-                bio: fd.get("bio") as string,
-                favouriteMemory: fd.get("favouriteMemory") as string,
-                linkedinUrl: fd.get("linkedinUrl") as string,
-                joinedAt,
-                photoUrl,
-            });
-            if (!result.success) {
-                setError(result.error);
-                setLoading(false);
-                return;
-            }
+            const valid = statusHistory.filter((e) => e.startedAt);
+            const [updateResult, historyResult] = await Promise.all([
+                updateMember(memberId!, {
+                    fullName: fd.get("fullName") as string,
+                    bio: fd.get("bio") as string,
+                    favouriteMemory: fd.get("favouriteMemory") as string,
+                    linkedinUrl: fd.get("linkedinUrl") as string,
+                    joinedAt,
+                    photoUrl,
+                }),
+                valid.length > 0 ? setStatusHistory(memberId!, valid) : Promise.resolve({success: true, data: undefined} as const),
+            ]);
+            if (!updateResult.success) { setError(updateResult.error); setLoading(false); return; }
+            if (!historyResult.success) { setError(historyResult.error); setLoading(false); return; }
         }
 
         router.push("/admin/members");
@@ -171,32 +190,32 @@ export function MemberForm({mode, memberId, defaultValues, members = []}: Props)
             />
 
             <Input
-                label="Join date"
+                label="Join month"
                 name="joinedAt"
                 id="joinedAt"
-                type="date"
+                type="month"
                 required
                 defaultValue={
                     defaultValues?.joinedAt
-                        ? new Date(defaultValues.joinedAt).toISOString().split("T")[0]
+                        ? new Date(defaultValues.joinedAt).toISOString().substring(0, 7)
                         : ""
                 }
             />
 
-            {mode === "create" && (
-                <div className="flex flex-col gap-2">
-                    <label className="text-[12px] font-medium text-[var(--text-2)]">
-                        Status history
-                    </label>
+            <div className="flex flex-col gap-2">
+                <label className="text-[12px] font-medium text-[var(--text-2)]">
+                    Status history
+                </label>
+                {mode === "create" && (
                     <p className="text-[11px] text-[var(--text-4)] -mt-1">
-                        Add each status change with its start date. Leave dates blank to use the join date.
+                        Add each status change with its start month. Leave dates blank to use the join month.
                     </p>
-                    <StatusHistoryBuilder
-                        entries={statusHistory}
-                        onChange={setStatusHistory}
-                    />
-                </div>
-            )}
+                )}
+                <StatusHistoryBuilder
+                    entries={statusHistory}
+                    onChange={setStatusHistoryState}
+                />
+            </div>
 
             {mode === "create" && members.length > 0 && (
                 <>

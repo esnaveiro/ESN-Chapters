@@ -65,6 +65,7 @@ model StatusHistory {
   id        String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   memberId  String       @db.Uuid
   status    MemberStatus
+  semester  Int?
   startedAt DateTime     @db.Date
   endedAt   DateTime?    @db.Date
   createdAt DateTime     @default(now()) @db.Timestamptz(6)

@@ -4,7 +4,6 @@ import {prisma} from "@/lib/prisma";
 import {MemberForm} from "@/components/admin/MemberForm";
 import {BuddySelector} from "@/components/admin/BuddySelector";
 import {NewbiesManager} from "@/components/admin/NewbiesManager";
-import {StatusHistoryManager} from "@/components/admin/StatusHistoryManager";
 import {StatusBadge} from "@/components/ui/Badge";
 import {DeleteButton} from "@/components/admin/DeleteButton";
 import {TributeManager} from "@/components/admin/TributeManager";
@@ -74,16 +73,26 @@ export default async function EditMemberPage({
                 />
             </div>
 
-            {/* Status history */}
+            {/* Profile details */}
             <section className="mb-10">
-                <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--text-4)] mb-4">
-                    Status history
+                <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--text-4)] mb-6">
+                    Profile details
                 </p>
-                <StatusHistoryManager
+                <MemberForm
+                    mode="edit"
                     memberId={member.id}
-                    initialEntries={member.statusHistory.map((sh) => ({
+                    defaultValues={{
+                        fullName: member.fullName,
+                        bio: member.bio ?? "",
+                        favouriteMemory: member.favouriteMemory ?? "",
+                        linkedinUrl: member.linkedinUrl ?? "",
+                        joinedAt: member.joinedAt.toISOString(),
+                        photoUrl: member.photoUrl ?? "",
+                    }}
+                    initialStatusHistory={member.statusHistory.map((sh) => ({
                         status: sh.status,
-                        startedAt: sh.startedAt.toISOString().split("T")[0],
+                        startedAt: sh.startedAt.toISOString().substring(0, 7),
+                        semester: sh.semester,
                     }))}
                 />
             </section>
@@ -97,7 +106,6 @@ export default async function EditMemberPage({
                 </p>
 
                 <div className="flex flex-col gap-8">
-                    {/* newbie ← buddy */}
                     <div>
                         <p className="text-[12px] font-medium text-[var(--text-2)] mb-3">My buddy</p>
                         <BuddySelector
@@ -107,7 +115,6 @@ export default async function EditMemberPage({
                         />
                     </div>
 
-                    {/* buddy → newbies */}
                     <div>
                         <p className="text-[12px] font-medium text-[var(--text-2)] mb-3">My newbies</p>
                         <NewbiesManager
@@ -130,27 +137,6 @@ export default async function EditMemberPage({
                     recipientId={member.id}
                     tributes={member.tributesReceived}
                     allMembers={allMembers.filter((m) => m.id !== member.id)}
-                />
-            </section>
-
-            <div className="border-t border-[var(--border)] mb-10"/>
-
-            {/* Profile details */}
-            <section>
-                <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--text-4)] mb-6">
-                    Profile details
-                </p>
-                <MemberForm
-                    mode="edit"
-                    memberId={member.id}
-                    defaultValues={{
-                        fullName: member.fullName,
-                        bio: member.bio ?? "",
-                        favouriteMemory: member.favouriteMemory ?? "",
-                        linkedinUrl: member.linkedinUrl ?? "",
-                        joinedAt: member.joinedAt.toISOString(),
-                        photoUrl: member.photoUrl ?? "",
-                    }}
                 />
             </section>
         </div>

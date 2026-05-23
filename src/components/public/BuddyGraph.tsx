@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useLayoutEffect, useMemo, useRef, useState} from "react";
+import {useLayoutEffect, useMemo, useRef, useState} from "react";
 import Link from "next/link";
 import {MemberStatus} from "@/generated/prisma/enums";
 import {STATUS_LABELS} from "@/lib/utils";
@@ -16,7 +16,7 @@ export type BandMember = {
     bio: string | null;
     favouriteMemory: string | null;
 };
-export type YearBand = { academicYear: string; color: string; members: BandMember[] };
+export type YearBand = { academicYear: string; semester: 1 | 2; color: string; members: BandMember[] };
 export type BuddyConn = { buddyId: string; newbieId: string };
 
 type Props = { yearBands: YearBand[]; buddyLinks: BuddyConn[] };
@@ -39,22 +39,20 @@ const NAV_H = 56;
 const MOBILE_NAV_H = 56;
 
 export function BuddyGraph({yearBands, buddyLinks}: Props) {
-    const outerRef = useRef<HTMLDivElement>(null);
     const wrapRef = useRef<HTMLDivElement>(null);
     const [selected, setSelected] = useState<BandMember | null>(null);
     const [hoveredYear, setHoveredYear] = useState<string | null>(null);
     const [h, setH] = useState(600);
     const [scrollLeft, setScrollLeft] = useState(0);
-    const [tx, setTx] = useState(0);
     const [isMobile, setIsMobile] = useState(false);
     const [vw, setVw] = useState(1280);
     const [vh, setVh] = useState(800);
 
     const totalW = yearBands.length * COL_W;
-
     const mobileViewH = Math.max(300, vh - NAV_H - MOBILE_NAV_H);
-    const maxTx = Math.max(0, totalW - vw);
-    const scrollHeight = maxTx + 200;
+
+    const maxMembers = Math.max(...yearBands.map(b => b.members.length), 1);
+    const minRequiredH = HDR_H + (maxMembers - 1) * MEM_STEP + MEM_R * 2 + 80;
 
     useLayoutEffect(() => {
         const update = () => {
@@ -63,29 +61,15 @@ export function BuddyGraph({yearBands, buddyLinks}: Props) {
             setVw(window.innerWidth);
             setVh(window.innerHeight);
             if (mobile) {
-                setH(Math.max(300, window.innerHeight - NAV_H - MOBILE_NAV_H));
-            } else if (wrapRef.current) {
-                setH(wrapRef.current.clientHeight);
+                setH(Math.max(300, window.innerHeight - NAV_H - MOBILE_NAV_H, minRequiredH));
+            } else {
+                setH(Math.max(window.innerHeight - NAV_H, minRequiredH));
             }
         };
         update();
         window.addEventListener("resize", update);
         return () => window.removeEventListener("resize", update);
-    }, []);
-
-    useEffect(() => {
-        if (!isMobile) return;
-        const handle = () => {
-            const outer = outerRef.current;
-            if (!outer) return;
-            const scrolled = Math.max(0, -(outer.getBoundingClientRect().top - NAV_H));
-            const progress = scrollHeight > 0 ? Math.min(1, scrolled / scrollHeight) : 0;
-            setTx(progress * maxTx);
-        };
-        window.addEventListener("scroll", handle, {passive: true});
-        handle();
-        return () => window.removeEventListener("scroll", handle);
-    }, [isMobile, scrollHeight, maxTx]);
+    }, [minRequiredH]);
 
     /* ── Member (x, y) positions ────────────────────────────────── */
     const positions = useMemo(() => {
@@ -97,7 +81,7 @@ export function BuddyGraph({yearBands, buddyLinks}: Props) {
             const groupH = (N - 1) * MEM_STEP;
             const base = HDR_H + (avail - groupH) / 2;
             const stagger = (col % 5) * (MEM_STEP / 3);
-            const startY = Math.max(HDR_H + 8, Math.min(h - 8 - groupH, base + stagger));
+            const startY = Math.max(HDR_H + 8, Math.min(h - MEM_R - 13 - 16 - groupH, base + stagger));
 
             band.members.forEach((m, i) => {
                 map.set(m.id, {
@@ -189,8 +173,7 @@ export function BuddyGraph({yearBands, buddyLinks}: Props) {
         ].join(" ");
     }
 
-    /* ── Header offset: tx on mobile, scrollLeft on desktop ─────── */
-    const headerOffset = isMobile ? tx : scrollLeft;
+    const headerOffset = scrollLeft;
 
     /* ── Shared inner content ────────────────────────────────────── */
     function renderContent() {
@@ -215,11 +198,18 @@ export function BuddyGraph({yearBands, buddyLinks}: Props) {
                                 display: "flex", flexDirection: "column",
                                 alignItems: "center", justifyContent: "center", gap: 2,
                             }}>
-                                <span style={{
-                                    fontSize: 12, fontWeight: 700, letterSpacing: "0.05em",
-                                    color: "rgba(255,255,255,0.95)",
-                                    fontFamily: "Inter, system-ui, sans-serif",
-                                }}>{band.academicYear}</span>
+                                <div style={{display: "flex", alignItems: "baseline", gap: 5}}>
+                                    <span style={{
+                                        fontSize: 12, fontWeight: 700, letterSpacing: "0.05em",
+                                        color: "rgba(255,255,255,0.95)",
+                                        fontFamily: "Inter, system-ui, sans-serif",
+                                    }}>{band.academicYear}</span>
+                                    <span style={{
+                                        fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+                                        color: "rgba(255,255,255,0.7)",
+                                        fontFamily: "Inter, system-ui, sans-serif",
+                                    }}>S{band.semester}</span>
+                                </div>
                                 <span style={{
                                     fontSize: 9, color: "rgba(255,255,255,0.48)",
                                     fontFamily: "Inter, system-ui, sans-serif",
@@ -231,18 +221,21 @@ export function BuddyGraph({yearBands, buddyLinks}: Props) {
 
                 {/* ── SVG content ────────────────────────────────────── */}
                 {isMobile ? (
-                    <div style={{position: "absolute", inset: 0}}>
-                        <svg
-                            width={totalW} height={h}
-                            style={{display: "block", transform: `translateX(-${tx}px)`, willChange: "transform"}}
-                        >
-                            {renderSvgContent()}
+                    <div
+                        className="no-scrollbar"
+                        style={{position: "absolute", top: HDR_H, left: 0, right: 0, bottom: 0, overflowX: "auto", overflowY: "auto"}}
+                        onScroll={(e) => setScrollLeft(e.currentTarget.scrollLeft)}
+                    >
+                        <svg width={totalW} height={h - HDR_H} style={{display: "block"}}>
+                            <g transform={`translate(0,${-HDR_H})`}>
+                                {renderSvgContent()}
+                            </g>
                         </svg>
                     </div>
                 ) : (
                     <div
                         className="no-scrollbar"
-                        style={{width: "100%", height: "100%", overflowX: "auto", overflowY: "hidden"}}
+                        style={{width: "100%", height: "100%", overflowX: "auto", overflowY: "auto"}}
                         onScroll={(e) => setScrollLeft(e.currentTarget.scrollLeft)}
                         onMouseMove={(e) => {
                             const rect = e.currentTarget.getBoundingClientRect();
@@ -447,22 +440,14 @@ export function BuddyGraph({yearBands, buddyLinks}: Props) {
         );
     }
 
-    /* ── Mobile: tall outer div + sticky viewport ────────────────── */
+    /* ── Mobile: fixed viewport, 2D scroll inside ───────────────── */
     if (isMobile) {
         return (
-            <div ref={outerRef} style={{height: mobileViewH + scrollHeight}}>
-                <div
-                    ref={wrapRef}
-                    style={{
-                        position: "sticky",
-                        top: NAV_H,
-                        height: mobileViewH,
-                        overflow: "hidden",
-                        background: "var(--bg)",
-                    }}
-                >
-                    {renderContent()}
-                </div>
+            <div
+                ref={wrapRef}
+                style={{height: mobileViewH, position: "relative", overflow: "hidden", background: "var(--bg)"}}
+            >
+                {renderContent()}
             </div>
         );
     }
