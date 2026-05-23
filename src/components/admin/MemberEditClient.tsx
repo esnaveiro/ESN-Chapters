@@ -1,6 +1,6 @@
 "use client";
 
-import {useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {MemberStatus} from "@/generated/prisma/enums";
@@ -61,7 +61,14 @@ export function MemberEditClient({member, allMembers}: Props) {
     const [linkedinUrl, setLinkedinUrl] = useState(member.linkedinUrl ?? "");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    const [saved, setSaved] = useState(false);
+    const [toast, setToast] = useState(false);
+
+    const dismissToast = useCallback(() => setToast(false), []);
+    useEffect(() => {
+        if (!toast) return;
+        const t = setTimeout(dismissToast, 3500);
+        return () => clearTimeout(t);
+    }, [toast, dismissToast]);
 
     async function handleSave() {
         setLoading(true);
@@ -86,12 +93,12 @@ export function MemberEditClient({member, allMembers}: Props) {
         setLoading(false);
         if (!updateResult.success) { setError(updateResult.error); return; }
         if (!historyResult.success) { setError(historyResult.error); return; }
-        setSaved(true);
+        setToast(true);
         router.refresh();
     }
 
     return (
-        <div>
+        <div style={{position: "relative"}}>
             <Link
                 href="/admin/members"
                 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-[var(--text-4)] no-underline hover:text-[var(--text-2)] transition-colors mb-6 inline-block"
@@ -218,17 +225,6 @@ export function MemberEditClient({member, allMembers}: Props) {
             {/* ── Save ─────────────────────────────────────────────── */}
             <div className="flex flex-col gap-3 pb-10">
                 {error && <p className="text-[12px] text-red-600">{error}</p>}
-                {saved && (
-                    <div className="flex items-center gap-3 text-[13px]">
-                        <span className="text-green-600 font-medium">Saved successfully.</span>
-                        <Link
-                            href={`/members/${member.slug}`}
-                            className="font-semibold text-[var(--accent)] hover:opacity-70 transition-opacity"
-                        >
-                            View profile →
-                        </Link>
-                    </div>
-                )}
                 <div className="flex gap-3">
                     <Button onClick={handleSave} disabled={loading}>
                         {loading ? "Saving…" : "Save changes"}
@@ -237,6 +233,48 @@ export function MemberEditClient({member, allMembers}: Props) {
                         Cancel
                     </Button>
                 </div>
+            </div>
+
+            {/* ── Toast ────────────────────────────────────────────── */}
+            <div
+                style={{
+                    position: "fixed",
+                    bottom: 24,
+                    right: 24,
+                    zIndex: 100,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    padding: "12px 16px",
+                    borderRadius: "var(--radius-md)",
+                    background: "var(--surface)",
+                    border: "1px solid var(--border)",
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                    fontSize: 13,
+                    pointerEvents: toast ? "auto" : "none",
+                    opacity: toast ? 1 : 0,
+                    transform: toast ? "translateY(0)" : "translateY(10px)",
+                    transition: "opacity 0.2s ease, transform 0.2s ease",
+                }}
+            >
+                <span style={{color: "var(--text-1)", fontWeight: 500}}>Saved successfully</span>
+                <Link
+                    href={`/members/${member.slug}`}
+                    className="font-semibold hover:opacity-70 transition-opacity"
+                    style={{color: "var(--accent)"}}
+                >
+                    View profile →
+                </Link>
+                <button
+                    onClick={dismissToast}
+                    style={{
+                        marginLeft: 4, color: "var(--text-4)", background: "none",
+                        border: "none", cursor: "pointer", fontSize: 16, lineHeight: 1, padding: 0,
+                    }}
+                    aria-label="Dismiss"
+                >
+                    ×
+                </button>
             </div>
         </div>
     );
