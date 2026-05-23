@@ -73,7 +73,7 @@ export function MemberEditClient({member, allMembers}: Props) {
     async function handleSave() {
         setLoading(true);
         setError("");
-        setSaved(false);
+        setToast(false);
 
         const valid = statusHistory.filter((e) => e.startedAt);
         const [updateResult, historyResult] = await Promise.all([
