@@ -464,48 +464,48 @@ async function main() {
             data: {
                 mandateId: mandate1.id,
                 memberId: ana.id,
-                department: "Board",
-                roleTitle: "President"
+                departments: ["Board"],
+                roleTitles: ["President"]
             }
         }),
         prisma.mandateMembership.create({
             data: {
                 mandateId: mandate1.id,
                 memberId: catarina.id,
-                department: "Board",
-                roleTitle: "HR Director"
+                departments: ["Board"],
+                roleTitles: ["HR Director"]
             }
         }),
         prisma.mandateMembership.create({
             data: {
                 mandateId: mandate1.id,
                 memberId: diogo.id,
-                department: "Board",
-                roleTitle: "IT Director"
+                departments: ["Board"],
+                roleTitles: ["IT Director"]
             }
         }),
         prisma.mandateMembership.create({
             data: {
                 mandateId: mandate1.id,
                 memberId: bruno.id,
-                department: "Communications",
-                roleTitle: "Social Media Manager"
+                departments: ["Communications"],
+                roleTitles: ["Social Media Manager"]
             }
         }),
         prisma.mandateMembership.create({
             data: {
                 mandateId: mandate1.id,
                 memberId: elena.id,
-                department: "Cultural",
-                roleTitle: "Cultural Coordinator"
+                departments: ["Cultural"],
+                roleTitles: ["Cultural Coordinator"]
             }
         }),
         prisma.mandateMembership.create({
             data: {
                 mandateId: mandate1.id,
                 memberId: francisco.id,
-                department: "Activities",
-                roleTitle: "Activities Coordinator"
+                departments: ["Activities"],
+                roleTitles: ["Activities Coordinator"]
             }
         }),
 
@@ -514,48 +514,48 @@ async function main() {
             data: {
                 mandateId: mandate2.id,
                 memberId: elena.id,
-                department: "Board",
-                roleTitle: "President"
+                departments: ["Board"],
+                roleTitles: ["President"]
             }
         }),
         prisma.mandateMembership.create({
             data: {
                 mandateId: mandate2.id,
                 memberId: francisco.id,
-                department: "Board",
-                roleTitle: "HR Director"
+                departments: ["Board"],
+                roleTitles: ["HR Director"]
             }
         }),
         prisma.mandateMembership.create({
             data: {
                 mandateId: mandate2.id,
                 memberId: gabriela.id,
-                department: "Board",
-                roleTitle: "Activities Director"
+                departments: ["Board"],
+                roleTitles: ["Activities Director"]
             }
         }),
         prisma.mandateMembership.create({
             data: {
                 mandateId: mandate2.id,
                 memberId: henrique.id,
-                department: "Activities",
-                roleTitle: "Events Coordinator"
+                departments: ["Activities"],
+                roleTitles: ["Events Coordinator"]
             }
         }),
         prisma.mandateMembership.create({
             data: {
                 mandateId: mandate2.id,
                 memberId: ines.id,
-                department: "Communications",
-                roleTitle: "Designer"
+                departments: ["Communications"],
+                roleTitles: ["Designer"]
             }
         }),
         prisma.mandateMembership.create({
             data: {
                 mandateId: mandate2.id,
                 memberId: joao.id,
-                department: "Projects",
-                roleTitle: "Projects Coordinator"
+                departments: ["Projects"],
+                roleTitles: ["Projects Coordinator"]
             }
         }),
 
@@ -564,72 +564,72 @@ async function main() {
             data: {
                 mandateId: mandate3.id,
                 memberId: gabriela.id,
-                department: "Board",
-                roleTitle: "President"
+                departments: ["Board"],
+                roleTitles: ["President"]
             }
         }),
         prisma.mandateMembership.create({
             data: {
                 mandateId: mandate3.id,
                 memberId: joao.id,
-                department: "Board",
-                roleTitle: "HR Director"
+                departments: ["Board"],
+                roleTitles: ["HR Director"]
             }
         }),
         prisma.mandateMembership.create({
             data: {
                 mandateId: mandate3.id,
                 memberId: lucas.id,
-                department: "Board",
-                roleTitle: "Finance Director"
+                departments: ["Board"],
+                roleTitles: ["Finance Director"]
             }
         }),
         prisma.mandateMembership.create({
             data: {
                 mandateId: mandate3.id,
                 memberId: mariana.id,
-                department: "Communications",
-                roleTitle: "Social Media Manager"
+                departments: ["Communications"],
+                roleTitles: ["Social Media Manager"]
             }
         }),
         prisma.mandateMembership.create({
             data: {
                 mandateId: mandate3.id,
                 memberId: kira.id,
-                department: "Activities",
-                roleTitle: "International Coordinator"
+                departments: ["Activities"],
+                roleTitles: ["International Coordinator"]
             }
         }),
         prisma.mandateMembership.create({
             data: {
                 mandateId: mandate3.id,
                 memberId: henrique.id,
-                department: "Activities",
-                roleTitle: "Events Coordinator"
+                departments: ["Activities"],
+                roleTitles: ["Events Coordinator"]
             }
         }),
         prisma.mandateMembership.create({
             data: {
                 mandateId: mandate3.id,
                 memberId: nuno.id,
-                department: "Cultural",
-                roleTitle: "Cultural Volunteer"
+                departments: ["Cultural"],
+                roleTitles: ["Cultural Volunteer"]
             }
         }),
         prisma.mandateMembership.create({
             data: {
                 mandateId: mandate3.id,
                 memberId: olga.id,
-                department: "Cultural",
-                roleTitle: "Cultural Volunteer"
+                departments: ["Cultural"],
+                roleTitles: ["Cultural Volunteer"]
             }
         }),
         prisma.mandateMembership.create({
             data: {
                 mandateId: mandate3.id,
                 memberId: pedro.id,
-                department: "Activities",
-                roleTitle: "Activities Volunteer"
+                departments: ["Activities"],
+                roleTitles: ["Activities Volunteer"]
             }
         }),
     ]);
