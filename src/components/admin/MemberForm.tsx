@@ -28,7 +28,7 @@ const STATUS_OPTIONS = Object.values(MemberStatus).map((s) => ({
     label: STATUS_LABELS[s],
 }));
 
-function StatusHistoryBuilder({
+export function StatusHistoryBuilder({
                                   entries,
                                   onChange,
                               }: {
