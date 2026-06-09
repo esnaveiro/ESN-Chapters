@@ -4,7 +4,6 @@ import {PhotoZoom} from "@/components/ui/PhotoZoom";
 import Link from "next/link";
 import {prisma} from "@/lib/prisma";
 import {formatDate, formatFullDate, getMandateColor, latestStatus, STATUS_LABELS} from "@/lib/utils";
-import {MemberStatus} from "@/generated/prisma/enums";
 import {BadgeIcon} from "@/components/ui/BadgeIcon";
 
 export const dynamic = "force-dynamic";
@@ -172,6 +171,7 @@ export default async function MemberProfilePage({
                 {/* Favourite memory */}
                 {member.favouriteMemory && (
                     <div className="pt-12 pb-10 border-b border-[var(--border)]">
+                        <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--text-4)] mb-4">My favourite memory</p>
                         <p className="text-[clamp(1.05rem,1.8vw,1.35rem)] italic text-[var(--text-2)] leading-[1.65] max-w-[740px]">
               <span
                   aria-hidden
