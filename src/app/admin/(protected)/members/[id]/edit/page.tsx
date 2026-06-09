@@ -1,7 +1,7 @@
 import {notFound} from "next/navigation";
 import {prisma} from "@/lib/prisma";
 import {MemberEditClient} from "@/components/admin/MemberEditClient";
-import {MemberStatus} from "@/generated/prisma/enums";
+import {latestStatus} from "@/lib/utils";
 
 export default async function EditMemberPage({params}: { params: Promise<{ id: string }> }) {
     const {id} = await params;
@@ -24,7 +24,7 @@ export default async function EditMemberPage({params}: { params: Promise<{ id: s
 
     if (!member) notFound();
 
-    const currentStatus = member.statusHistory.find((s) => !s.endedAt)?.status ?? ("NEWBIE" as MemberStatus);
+    const currentStatus = latestStatus(member.statusHistory);
 
     return (
         <MemberEditClient

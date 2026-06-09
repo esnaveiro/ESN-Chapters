@@ -12,7 +12,7 @@ export default async function AdminDashboard() {
             prisma.member.findMany({
                 orderBy: {createdAt: "desc"},
                 take: 8,
-                select: {id: true, fullName: true, slug: true, statusHistory: {where: {endedAt: null}, select: {status: true}}},
+                select: {id: true, fullName: true, slug: true, statusHistory: {orderBy: {startedAt: "desc"}, take: 1, select: {status: true}}},
             }),
         ]);
 

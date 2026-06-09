@@ -3,8 +3,7 @@ export const dynamic = "force-dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import {prisma} from "@/lib/prisma";
-import {getMandateColor} from "@/lib/utils";
-import {MemberStatus} from "@/generated/prisma/enums";
+import {getMandateColor, latestStatus} from "@/lib/utils";
 import {YearbookIndex} from "@/components/public/YearbookIndex";
 import {sectionId} from "@/lib/yearbook";
 
@@ -84,7 +83,7 @@ export default async function MembersPage() {
                                     style={{gridTemplateColumns: "repeat(auto-fill, minmax(148px, 1fr))"}}
                                 >
                                     {mandate.memberships.map(({member, roleTitles}) => {
-                                        const status = member.statusHistory.find(s => !s.endedAt)?.status ?? ("NEWBIE" as MemberStatus);
+                                        const status = latestStatus(member.statusHistory);
                                         const initials = member.fullName.split(" ").map(n => n[0]).slice(0, 2).join("");
 
                                         return (

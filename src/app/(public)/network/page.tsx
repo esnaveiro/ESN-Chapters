@@ -7,7 +7,7 @@ import {type BuddyConn, BuddyGraph, type YearBand} from "@/components/public/Bud
 export default async function NetworkPage() {
     const [members, mandates, rawLinks] = await Promise.all([
         prisma.member.findMany({
-            include: {statusHistory: {orderBy: {startedAt: "asc"}, take: 1}},
+            include: {statusHistory: {orderBy: {startedAt: "asc"}}},
             orderBy: {joinedAt: "asc"},
         }),
         prisma.mandate.findMany({orderBy: {startsAt: "asc"}}),
@@ -50,7 +50,7 @@ export default async function NetworkPage() {
                 slug: m.slug,
                 fullName: m.fullName,
                 photoUrl: m.photoUrl,
-                status: m.statusHistory[0]?.status ?? ("NEWBIE" as const),
+                status: m.statusHistory.at(-1)?.status ?? ("NEWBIE" as const),
                 joinedAt: m.joinedAt,
                 bio: m.bio,
                 favouriteMemory: m.favouriteMemory,

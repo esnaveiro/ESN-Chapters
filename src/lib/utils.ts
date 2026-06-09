@@ -66,6 +66,15 @@ export const STATUS_COLORS: Record<
   ALUMNI:           { bg: "#f5f5f5", text: "#737373" },
 };
 
+export function latestStatus(
+  history: { status: MemberStatus; startedAt: Date | string }[]
+): MemberStatus {
+  if (!history.length) return "NEWBIE";
+  return [...history].sort(
+    (a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime()
+  )[0].status;
+}
+
 export function cn(...classes: (string | undefined | false | null)[]): string {
   return classes.filter(Boolean).join(" ");
 }

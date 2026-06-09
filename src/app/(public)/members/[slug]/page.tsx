@@ -3,7 +3,7 @@ import Image from "next/image";
 import {PhotoZoom} from "@/components/ui/PhotoZoom";
 import Link from "next/link";
 import {prisma} from "@/lib/prisma";
-import {formatDate, formatFullDate, getMandateColor, STATUS_LABELS} from "@/lib/utils";
+import {formatDate, formatFullDate, getMandateColor, latestStatus, STATUS_LABELS} from "@/lib/utils";
 import {MemberStatus} from "@/generated/prisma/enums";
 import {BadgeIcon} from "@/components/ui/BadgeIcon";
 
@@ -57,8 +57,7 @@ export default async function MemberProfilePage({
 
     if (!member) notFound();
 
-    const currentStatus =
-        member.statusHistory.find((s) => !s.endedAt)?.status ?? ("NEWBIE" as MemberStatus);
+    const currentStatus = latestStatus(member.statusHistory);
 
     const latestMandate = member.mandateMemberships[member.mandateMemberships.length - 1]?.mandate ?? null;
     const accentColor = latestMandate ? getMandateColor(latestMandate.colorIndex, latestMandate.customColor) : "#0ea5e9";

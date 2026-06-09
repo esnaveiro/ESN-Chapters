@@ -6,7 +6,7 @@ import {MembersRoster} from "@/components/admin/MembersRoster";
 export default async function AdminMembersPage() {
     const members = await prisma.member.findMany({
         orderBy: {fullName: "asc"},
-        include: {statusHistory: {where: {endedAt: null}}},
+        include: {statusHistory: {orderBy: {startedAt: "desc"}, take: 1}},
     });
 
     return (
