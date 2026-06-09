@@ -95,6 +95,7 @@ export async function createMember(
             });
         }
 
+        await syncMandateMembershipsForMember(member.id);
         revalidatePath("/members");
         revalidatePath("/admin/members");
         if (data.buddyId || data.newbieIds?.length) revalidatePath("/network");
@@ -211,6 +212,7 @@ export async function setStatusHistory(
                 : [prisma.member.update({where: {id: memberId}, data: {isAlumni: false}})]),
         ]);
         const member = await prisma.member.findUnique({where: {id: memberId}, select: {slug: true}});
+        await syncMandateMembershipsForMember(memberId);
         revalidatePath(`/members/${member?.slug}`);
         revalidatePath("/admin/members");
         return {success: true, data: undefined};
@@ -251,6 +253,56 @@ export async function setBuddyLink(
     } catch (e) {
         return {success: false, error: String(e)};
     }
+}
+
+/* Derive mandate end date from academicYear string e.g. "2023/24" → 2024-08-31 */
+function mandateEndDate(mandate: { endsAt: Date | null; academicYear: string }): Date {
+    if (mandate.endsAt) return mandate.endsAt;
+    const endYear = Number("20" + mandate.academicYear.split("/")[1]);
+    return new Date(`${endYear}-08-31`);
+}
+
+/*
+ * Add this member to every mandate they were active during (status ≠ ALUMNI).
+ * "Active during" = joinedAt ≤ mandate_end AND (leftAt IS NULL OR leftAt ≥ mandate_start).
+ * Only adds; never removes existing memberships.
+ */
+async function syncMandateMembershipsForMember(memberId: string): Promise<void> {
+    const [member, mandates, existing] = await Promise.all([
+        prisma.member.findUnique({
+            where: {id: memberId},
+            select: {joinedAt: true, leftAt: true},
+        }),
+        prisma.mandate.findMany({select: {id: true, academicYear: true, startsAt: true, endsAt: true}}),
+        prisma.mandateMembership.findMany({
+            where: {memberId},
+            select: {mandateId: true},
+        }),
+    ]);
+    if (!member) return;
+
+    const alreadyIn = new Set(existing.map((e) => e.mandateId));
+    const toAdd: string[] = [];
+
+    for (const mandate of mandates) {
+        if (alreadyIn.has(mandate.id)) continue;
+        const mEnd = mandateEndDate(mandate);
+        const afterJoin  = member.joinedAt <= mEnd;
+        const beforeLeft = !member.leftAt || member.leftAt >= mandate.startsAt;
+        if (afterJoin && beforeLeft) toAdd.push(mandate.id);
+    }
+
+    if (toAdd.length === 0) return;
+
+    await prisma.mandateMembership.createMany({
+        data: toAdd.map((mandateId) => ({
+            memberId,
+            mandateId,
+            departments: [],
+            roleTitles: [],
+        })),
+        skipDuplicates: true,
+    });
 }
 
 async function deleteMemberById(id: string) {
