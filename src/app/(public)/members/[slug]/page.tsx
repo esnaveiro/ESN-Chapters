@@ -195,15 +195,16 @@ export default async function MemberProfilePage({
                         <div className="py-7 md:py-9 md:pr-10 border-b md:border-b-0 md:border-r border-[var(--border)]">
                             <MetaLabel>Journey</MetaLabel>
                             <div className="flex flex-col gap-[14px] mt-[18px]">
-                                {member.statusHistory.map((sh) => {
-                                    const active = !sh.endedAt;
+                                {member.statusHistory.map((sh, i) => {
+                                    const next = member.statusHistory[i + 1];
+                                    const isLatest = i === member.statusHistory.length - 1;
                                     return (
                                         <div key={sh.id} className="flex gap-3 items-baseline">
                                             <div
                                                 className="size-[5px] rounded-full shrink-0 mt-1"
                                                 style={{
-                                                    background: active ? accentColor : "var(--border-strong)",
-                                                    boxShadow: active ? `0 0 5px ${accentColor}` : "none",
+                                                    background: isLatest ? accentColor : "var(--border-strong)",
+                                                    boxShadow: isLatest ? `0 0 5px ${accentColor}` : "none",
                                                 }}
                                             />
                                             <div>
@@ -212,7 +213,7 @@ export default async function MemberProfilePage({
                                                 </p>
                                                 <p className="text-[11px] text-[var(--text-4)] mt-px">
                                                     {formatDate(sh.startedAt)}
-                                                    {sh.endedAt ? ` – ${formatDate(sh.endedAt)}` : " – present"}
+                                                    {next ? ` – ${formatDate(next.startedAt)}` : " – present"}
                                                 </p>
                                             </div>
                                         </div>
