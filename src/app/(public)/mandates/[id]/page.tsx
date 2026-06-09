@@ -77,6 +77,10 @@ export default async function MandatePage({
     type Slot = { key: string; member: (typeof mandate.memberships)[0]["member"]; roleTitle: string };
     const deptMap = new Map<string, Slot[]>();
     for (const ms of mandate.memberships) {
+        // Skip members who were already ALUMNI before this mandate started
+        const alumniStart = ms.member.statusHistory.find(sh => sh.status === "ALUMNI")?.startedAt;
+        if (alumniStart && new Date(alumniStart) < mandate.startsAt) continue;
+
         if (ms.departments.length === 0) {
             const key = "General";
             if (!deptMap.has(key)) deptMap.set(key, []);
