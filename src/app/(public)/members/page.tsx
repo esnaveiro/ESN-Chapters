@@ -43,6 +43,51 @@ export default async function MembersPage() {
                         const color = getMandateColor(mandate.colorIndex, mandate.customColor);
                         const edition = String(idx + 1).padStart(2, "0");
 
+                        // Expand memberships into per dept/role slots
+                        type Slot = {key: string; member: (typeof mandate.memberships)[0]["member"]; roleTitle: string};
+                        const deptMap = new Map<string, Slot[]>();
+                        for (const ms of mandate.memberships) {
+                            if (ms.departments.length === 0) {
+                                if (!deptMap.has("General")) deptMap.set("General", []);
+                                deptMap.get("General")!.push({key: ms.id, member: ms.member, roleTitle: ms.roleTitles.join(" · ")});
+                            } else {
+                                for (let i = 0; i < ms.departments.length; i++) {
+                                    const dept = ms.departments[i]?.trim() || "General";
+                                    if (!deptMap.has(dept)) deptMap.set(dept, []);
+                                    deptMap.get(dept)!.push({key: `${ms.id}_${i}`, member: ms.member, roleTitle: ms.roleTitles[i] ?? ""});
+                                }
+                            }
+                        }
+
+                        const BOARD_PRIORITY = ["president", "vice-president", "vice president", "treasurer"];
+                        const STATUS_RANK: Record<string, number> = {SENIOR: 0, JUNIOR: 1, CANDIDATE_MEMBER: 2, NEWBIE: 3, ALUMNI: 4};
+                        for (const [dept, slots] of deptMap) {
+                            if (dept === "Board") {
+                                slots.sort((a, b) => {
+                                    const ai = BOARD_PRIORITY.findIndex(r => a.roleTitle.toLowerCase().includes(r));
+                                    const bi = BOARD_PRIORITY.findIndex(r => b.roleTitle.toLowerCase().includes(r));
+                                    const an = ai === -1 ? BOARD_PRIORITY.length : ai;
+                                    const bn = bi === -1 ? BOARD_PRIORITY.length : bi;
+                                    return an !== bn ? an - bn : a.member.fullName.localeCompare(b.member.fullName);
+                                });
+                            } else {
+                                slots.sort((a, b) => {
+                                    const ra = STATUS_RANK[latestStatus(a.member.statusHistory)] ?? 3;
+                                    const rb = STATUS_RANK[latestStatus(b.member.statusHistory)] ?? 3;
+                                    return ra !== rb ? ra - rb : a.member.fullName.localeCompare(b.member.fullName);
+                                });
+                            }
+                        }
+                        const departments = [...deptMap.keys()].sort((a, b) => {
+                            if (a === "Board") return -1;
+                            if (b === "Board") return 1;
+                            if (a === "General") return 1;
+                            if (b === "General") return -1;
+                            return a.localeCompare(b);
+                        });
+
+                        const totalSlots = [...deptMap.values()].reduce((n, s) => n + s.length, 0);
+
                         return (
                             <section
                                 key={mandate.id}
@@ -77,56 +122,74 @@ export default async function MembersPage() {
                                     />
                                 </div>
 
-                                {/* Portrait grid */}
-                                <div
-                                    className="grid gap-x-5 gap-y-8"
-                                    style={{gridTemplateColumns: "repeat(auto-fill, minmax(148px, 1fr))"}}
-                                >
-                                    {mandate.memberships.map(({member, roleTitles}) => {
-                                        const status = latestStatus(member.statusHistory);
-                                        const initials = member.fullName.split(" ").map(n => n[0]).slice(0, 2).join("");
-
-                                        return (
-                                            <Link
-                                                key={member.id}
-                                                href={`/members/${member.slug}`}
-                                                className="group block no-underline"
-                                            >
-                                                <div
-                                                    className="overflow-hidden group-hover:scale-[1.03] aspect-[3/4] rounded-md bg-[var(--surface-raised)] flex items-center justify-center relative shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
-                                                    style={{transition: "transform 0.22s cubic-bezier(0.16,1,0.3,1), box-shadow 0.22s ease"}}
-                                                >
-                                                    {member.photoUrl ? (
-                                                        <Image
-                                                            src={member.photoUrl}
-                                                            alt={member.fullName}
-                                                            fill
-                                                            sizes="(max-width: 640px) 30vw, (max-width: 1024px) 20vw, 160px"
-                                                            className="object-cover object-top group-hover:brightness-105"
-                                                            style={{transition: "filter 0.22s ease"}}
-                                                        />
-                                                    ) : (
-                                                        <span
-                                                            className="text-[1.6rem] font-extrabold tracking-[-0.03em]"
-                                                            style={{color}}
-                                                        >
-                              {initials}
-                            </span>
+                                {/* Grouped portrait sections */}
+                                {totalSlots > 0 && (
+                                    <div className="flex flex-col gap-8">
+                                        {departments.map(dept => {
+                                            const slots = deptMap.get(dept)!;
+                                            const showLabel = dept !== "General" || departments.length > 1;
+                                            return (
+                                                <div key={dept}>
+                                                    {showLabel && (
+                                                        <p className="text-[10px] font-bold tracking-[0.14em] uppercase mb-4 opacity-70"
+                                                           style={{color}}>
+                                                            {dept}
+                                                        </p>
                                                     )}
-                                                </div>
+                                                    <div
+                                                        className="grid gap-x-5 gap-y-8"
+                                                        style={{gridTemplateColumns: "repeat(auto-fill, minmax(148px, 1fr))"}}
+                                                    >
+                                                        {slots.map(({key, member, roleTitle}) => {
+                                                            const initials = member.fullName.split(" ").map(n => n[0]).slice(0, 2).join("");
+                                                            return (
+                                                                <Link
+                                                                    key={key}
+                                                                    href={`/members/${member.slug}`}
+                                                                    className="group block no-underline"
+                                                                >
+                                                                    <div
+                                                                        className="overflow-hidden group-hover:scale-[1.03] aspect-[3/4] rounded-md bg-[var(--surface-raised)] flex items-center justify-center relative shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+                                                                        style={{transition: "transform 0.22s cubic-bezier(0.16,1,0.3,1), box-shadow 0.22s ease"}}
+                                                                    >
+                                                                        {member.photoUrl ? (
+                                                                            <Image
+                                                                                src={member.photoUrl}
+                                                                                alt={member.fullName}
+                                                                                fill
+                                                                                sizes="(max-width: 640px) 30vw, (max-width: 1024px) 20vw, 160px"
+                                                                                className="object-cover object-top group-hover:brightness-105"
+                                                                                style={{transition: "filter 0.22s ease"}}
+                                                                            />
+                                                                        ) : (
+                                                                            <span
+                                                                                className="text-[1.6rem] font-extrabold tracking-[-0.03em]"
+                                                                                style={{color}}
+                                                                            >
+                                              {initials}
+                                            </span>
+                                                                        )}
+                                                                    </div>
 
-                                                <div className="mt-2.5 text-center">
-                                                    <p className="text-xs font-semibold text-[var(--text-1)] leading-[1.35] tracking-[-0.01em]">
-                                                        {member.fullName}
-                                                    </p>
-                                                    <p className="text-[10px] font-medium text-[var(--text-4)] mt-[3px] tracking-[0.04em]">
-                                                        {roleTitles.join(" · ")}
-                                                    </p>
+                                                                    <div className="mt-2.5 text-center">
+                                                                        <p className="text-xs font-semibold text-[var(--text-1)] leading-[1.35] tracking-[-0.01em]">
+                                                                            {member.fullName}
+                                                                        </p>
+                                                                        {roleTitle && (
+                                                                            <p className="text-[10px] font-medium text-[var(--text-4)] mt-[3px] tracking-[0.04em]">
+                                                                                {roleTitle}
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                </Link>
+                                                            );
+                                                        })}
+                                                    </div>
                                                 </div>
-                                            </Link>
-                                        );
-                                    })}
-                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </section>
                         );
                     })}

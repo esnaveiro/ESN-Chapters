@@ -6,7 +6,7 @@ import {latestStatus} from "@/lib/utils";
 export default async function EditMemberPage({params}: { params: Promise<{ id: string }> }) {
     const {id} = await params;
 
-    const [member, allMembers] = await Promise.all([
+    const [member, allMembers, allMandates] = await Promise.all([
         prisma.member.findUnique({
             where: {id},
             include: {
@@ -17,9 +17,14 @@ export default async function EditMemberPage({params}: { params: Promise<{ id: s
                     orderBy: {createdAt: "desc"},
                     include: {author: {select: {id: true, fullName: true}}},
                 },
+                mandateMemberships: {
+                    include: {mandate: {select: {id: true, academicYear: true, name: true}}},
+                    orderBy: [{mandate: {startsAt: "asc"}}, {sortOrder: "asc"}],
+                },
             },
         }),
         prisma.member.findMany({orderBy: {fullName: "asc"}, select: {id: true, fullName: true}}),
+        prisma.mandate.findMany({orderBy: {startsAt: "desc"}, select: {id: true, academicYear: true, name: true}}),
     ]);
 
     if (!member) notFound();
@@ -56,6 +61,13 @@ export default async function EditMemberPage({params}: { params: Promise<{ id: s
                 })),
             }}
             allMembers={allMembers}
+        allMandates={allMandates}
+        mandateMemberships={member.mandateMemberships.map((ms) => ({
+            id: ms.id,
+            departments: ms.departments,
+            roleTitles: ms.roleTitles,
+            mandate: ms.mandate,
+        }))}
         />
     );
 }

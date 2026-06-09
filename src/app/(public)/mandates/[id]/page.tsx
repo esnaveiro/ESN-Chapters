@@ -4,7 +4,7 @@ import {notFound} from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import {prisma} from "@/lib/prisma";
-import {formatDate, formatFullDate, getMandateColor} from "@/lib/utils";
+import {formatDate, formatFullDate, getMandateColor, latestStatus} from "@/lib/utils";
 
 const MILESTONE_COLORS: Record<string, string> = {
     FOUNDING: "#7ac143",
@@ -72,13 +72,45 @@ export default async function MandatePage({
 
     const color = getMandateColor(mandate.colorIndex, mandate.customColor);
 
-    // Group members by department; null/empty → labelled "General"
-    const deptMap = new Map<string, typeof mandate.memberships>();
+    // Expand each membership into one slot per dept/role pair so members with
+    // multiple roles appear once per department
+    type Slot = { key: string; member: (typeof mandate.memberships)[0]["member"]; roleTitle: string };
+    const deptMap = new Map<string, Slot[]>();
     for (const ms of mandate.memberships) {
-        const key = ms.departments[0]?.trim() || "General";
-        if (!deptMap.has(key)) deptMap.set(key, []);
-        deptMap.get(key)!.push(ms);
+        if (ms.departments.length === 0) {
+            const key = "General";
+            if (!deptMap.has(key)) deptMap.set(key, []);
+            deptMap.get(key)!.push({key: ms.id, member: ms.member, roleTitle: ms.roleTitles.join(" · ")});
+        } else {
+            for (let i = 0; i < ms.departments.length; i++) {
+                const dept = ms.departments[i]?.trim() || "General";
+                if (!deptMap.has(dept)) deptMap.set(dept, []);
+                deptMap.get(dept)!.push({key: `${ms.id}_${i}`, member: ms.member, roleTitle: ms.roleTitles[i] ?? ""});
+            }
+        }
     }
+
+    const BOARD_PRIORITY = ["president", "vice-president", "vice president", "treasurer"];
+    const STATUS_RANK: Record<string, number> = {SENIOR: 0, JUNIOR: 1, CANDIDATE_MEMBER: 2, NEWBIE: 3, ALUMNI: 4};
+
+    for (const [dept, slots] of deptMap) {
+        if (dept === "Board") {
+            slots.sort((a, b) => {
+                const ai = BOARD_PRIORITY.findIndex(r => a.roleTitle.toLowerCase().includes(r));
+                const bi = BOARD_PRIORITY.findIndex(r => b.roleTitle.toLowerCase().includes(r));
+                const an = ai === -1 ? BOARD_PRIORITY.length : ai;
+                const bn = bi === -1 ? BOARD_PRIORITY.length : bi;
+                return an !== bn ? an - bn : a.member.fullName.localeCompare(b.member.fullName);
+            });
+        } else {
+            slots.sort((a, b) => {
+                const ra = STATUS_RANK[latestStatus(a.member.statusHistory)] ?? 3;
+                const rb = STATUS_RANK[latestStatus(b.member.statusHistory)] ?? 3;
+                return ra !== rb ? ra - rb : a.member.fullName.localeCompare(b.member.fullName);
+            });
+        }
+    }
+
     // Sort: Board first, named departments alphabetically, "General" last
     const departments = [...deptMap.keys()].sort((a, b) => {
         if (a === "Board") return -1;
@@ -182,7 +214,7 @@ export default async function MandatePage({
 
                         <div className="mt-8 flex flex-col gap-12">
                             {departments.map((dept) => {
-                                const members = deptMap.get(dept)!;
+                                const slots = deptMap.get(dept)!;
                                 const showLabel = dept !== "General" || departments.length > 1;
                                 return (
                                     <div key={dept}>
@@ -197,11 +229,11 @@ export default async function MandatePage({
                                             className="grid gap-x-4 gap-y-6"
                                             style={{gridTemplateColumns: "repeat(auto-fill, minmax(148px, 1fr))"}}
                                         >
-                                            {members.map(({member, roleTitles}) => {
+                                            {slots.map(({key, member, roleTitle}) => {
                                                 const initials = member.fullName.split(" ").map((n: string) => n[0]).slice(0, 2).join("");
                                                 return (
                                                     <Link
-                                                        key={member.id}
+                                                        key={key}
                                                         href={`/members/${member.slug}`}
                                                         className="group block no-underline"
                                                     >
@@ -230,9 +262,9 @@ export default async function MandatePage({
                                                             <p className="text-xs font-semibold text-[var(--text-1)] leading-[1.35] tracking-[-0.01em]">
                                                                 {member.fullName}
                                                             </p>
-                                                            {roleTitles.length > 0 && (
+                                                            {roleTitle && (
                                                                 <p className="text-[10px] font-medium text-[var(--text-4)] mt-[3px] tracking-[0.04em]">
-                                                                    {roleTitles.join(" · ")}
+                                                                    {roleTitle}
                                                                 </p>
                                                             )}
                                                         </div>

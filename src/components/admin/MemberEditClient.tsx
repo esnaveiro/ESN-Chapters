@@ -12,6 +12,7 @@ import {PhotoUpload} from "@/components/admin/PhotoUpload";
 import {BuddySelector} from "@/components/admin/BuddySelector";
 import {NewbiesManager} from "@/components/admin/NewbiesManager";
 import {TributeManager} from "@/components/admin/TributeManager";
+import {MemberMandatesManager} from "@/components/admin/MemberMandatesManager";
 import {StatusHistoryBuilder} from "@/components/admin/MemberForm";
 import {deleteMember, setStatusHistory, StatusEntry, updateMember} from "@/actions/members";
 
@@ -19,6 +20,8 @@ const inputBase =
     "w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--text-1)] placeholder-[var(--text-4)] transition-colors focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-light)]";
 
 type MemberOption = { id: string; fullName: string };
+type MandateOption = { id: string; academicYear: string; name: string };
+type MandateMembership = { id: string; departments: string[]; roleTitles: string[]; mandate: MandateOption };
 type Tribute = {
     id: string; message: string; createdAt: Date;
     author: { id: string; fullName: string };
@@ -41,6 +44,8 @@ type Props = {
         tributes: Tribute[];
     };
     allMembers: MemberOption[];
+    allMandates: MandateOption[];
+    mandateMemberships: MandateMembership[];
 };
 
 function normalizeUrl(url: string): string {
@@ -49,7 +54,7 @@ function normalizeUrl(url: string): string {
     return `https://${url.trim()}`;
 }
 
-export function MemberEditClient({member, allMembers}: Props) {
+export function MemberEditClient({member, allMembers, allMandates, mandateMemberships}: Props) {
     const router = useRouter();
 
     const [photoUrl, setPhotoUrl] = useState(member.photoUrl ?? "");
@@ -204,6 +209,20 @@ export function MemberEditClient({member, allMembers}: Props) {
                         />
                     </div>
                 </div>
+            </section>
+
+            <div className="border-t border-[var(--border)] mb-10"/>
+
+            {/* ── Mandates ─────────────────────────────────────────── */}
+            <section className="mb-10">
+                <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--text-4)] mb-6">
+                    Mandates
+                </p>
+                <MemberMandatesManager
+                    memberId={member.id}
+                    memberships={mandateMemberships}
+                    allMandates={allMandates}
+                />
             </section>
 
             <div className="border-t border-[var(--border)] mb-10"/>

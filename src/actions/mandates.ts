@@ -110,15 +110,12 @@ export async function deleteMandates(ids: string[]): Promise<ActionResult> {
     }
 }
 
-function parseMulti(value: string): string[] {
-    return value.split(",").map(s => s.trim()).filter(Boolean);
-}
+export type RoleEntry = { department: string; roleTitle: string };
 
 export async function addMemberToMandate(
     mandateId: string,
     memberId: string,
-    departments: string,
-    roleTitles: string
+    roles: RoleEntry[]
 ): Promise<ActionResult> {
     try {
         await requireAuth();
@@ -128,7 +125,13 @@ export async function addMemberToMandate(
         });
         const sortOrder = (max._max.sortOrder ?? -1) + 1;
         await prisma.mandateMembership.create({
-            data: {mandateId, memberId, departments: parseMulti(departments), roleTitles: parseMulti(roleTitles), sortOrder},
+            data: {
+                mandateId,
+                memberId,
+                departments: roles.map(r => r.department).filter(Boolean),
+                roleTitles: roles.map(r => r.roleTitle).filter(Boolean),
+                sortOrder,
+            },
         });
         revalidatePath(`/mandates/${mandateId}`);
         revalidatePath("/admin/mandates");
@@ -147,6 +150,32 @@ export async function removeMemberFromMandate(
         await prisma.mandateMembership.delete({where: {id: membershipId}});
         revalidatePath(`/mandates/${mandateId}`);
         revalidatePath("/admin/mandates");
+        return {success: true, data: undefined};
+    } catch (e) {
+        return {success: false, error: String(e)};
+    }
+}
+
+export async function updateMandateMembership(
+    membershipId: string,
+    roles: RoleEntry[]
+): Promise<ActionResult> {
+    try {
+        await requireAuth();
+        const ms = await prisma.mandateMembership.findUnique({
+            where: {id: membershipId},
+            select: {mandateId: true, member: {select: {slug: true}}},
+        });
+        if (!ms) return {success: false, error: "Membership not found"};
+        await prisma.mandateMembership.update({
+            where: {id: membershipId},
+            data: {
+                departments: roles.map(r => r.department).filter(Boolean),
+                roleTitles: roles.map(r => r.roleTitle).filter(Boolean),
+            },
+        });
+        revalidatePath(`/mandates/${ms.mandateId}`);
+        revalidatePath(`/members/${ms.member.slug}`);
         return {success: true, data: undefined};
     } catch (e) {
         return {success: false, error: String(e)};

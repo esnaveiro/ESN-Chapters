@@ -4,7 +4,7 @@ import {useEffect, useRef, useState} from "react";
 import {useRouter} from "next/navigation";
 import {Button} from "@/components/ui/Button";
 import {Combobox} from "@/components/ui/Combobox";
-import {addMemberToMandate, removeMemberFromMandate, reorderMandateMemberships} from "@/actions/mandates";
+import {addMemberToMandate, removeMemberFromMandate, reorderMandateMemberships, type RoleEntry} from "@/actions/mandates";
 
 type Membership = {
     id: string;
@@ -22,13 +22,38 @@ type Props = {
 const inputBase =
     "w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--text-1)] placeholder-[var(--text-4)] transition-colors focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-light)]";
 
+function RoleRows({value, onChange}: {value: RoleEntry[]; onChange: (v: RoleEntry[]) => void}) {
+    function update(i: number, field: keyof RoleEntry, v: string) {
+        onChange(value.map((r, idx) => idx === i ? {...r, [field]: v} : r));
+    }
+    function remove(i: number) {
+        const next = value.filter((_, idx) => idx !== i);
+        onChange(next.length ? next : [{department: "", roleTitle: ""}]);
+    }
+    return (
+        <div className="flex flex-col gap-1.5">
+            {value.map((row, i) => (
+                <div key={i} className="flex gap-2 items-center">
+                    <input value={row.department} onChange={(e) => update(i, "department", e.target.value)} placeholder="Department" className={inputBase}/>
+                    <input value={row.roleTitle} onChange={(e) => update(i, "roleTitle", e.target.value)} placeholder="Role title" className={inputBase}/>
+                    {value.length > 1 && (
+                        <button onClick={() => remove(i)} className="shrink-0 text-[var(--text-4)] hover:text-red-500 transition-colors text-[16px] leading-none px-1" aria-label="Remove">×</button>
+                    )}
+                </div>
+            ))}
+            <button onClick={() => onChange([...value, {department: "", roleTitle: ""}])} className="self-start text-[11px] text-[var(--accent)] hover:opacity-70 transition-opacity mt-0.5">
+                + Add role
+            </button>
+        </div>
+    );
+}
+
 export function MandateMembersManager({mandateId, memberships, allMembers}: Props) {
     const router = useRouter();
     const [items, setItems] = useState(memberships);
     const [adding, setAdding] = useState(false);
     const [memberId, setMemberId] = useState("");
-    const [department, setDepartment] = useState("");
-    const [roleTitle, setRoleTitle] = useState("");
+    const [roles, setRoles] = useState<RoleEntry[]>([{department: "", roleTitle: ""}]);
     const [loading, setLoading] = useState(false);
     const [removingId, setRemovingId] = useState<string | null>(null);
     const [error, setError] = useState("");
@@ -47,12 +72,11 @@ export function MandateMembersManager({mandateId, memberships, allMembers}: Prop
         if (!memberId) { setError("Select a member"); return; }
         setLoading(true);
         setError("");
-        const result = await addMemberToMandate(mandateId, memberId, department, roleTitle);
+        const result = await addMemberToMandate(mandateId, memberId, roles);
         if (!result.success) { setError(result.error); setLoading(false); return; }
         setAdding(false);
         setMemberId("");
-        setDepartment("");
-        setRoleTitle("");
+        setRoles([{department: "", roleTitle: ""}]);
         router.refresh();
         setLoading(false);
     }
@@ -158,24 +182,13 @@ export function MandateMembersManager({mandateId, memberships, allMembers}: Prop
                         placeholder="— search member —"
                         options={available.map((m) => ({value: m.id, label: m.fullName}))}
                     />
-                    <input
-                        value={department}
-                        onChange={(e) => setDepartment(e.target.value)}
-                        placeholder="Departments — comma-separated (e.g. Board, Cultural)"
-                        className={inputBase}
-                    />
-                    <input
-                        value={roleTitle}
-                        onChange={(e) => setRoleTitle(e.target.value)}
-                        placeholder="Roles — comma-separated (e.g. IT Manager, Cultural Coordinator)"
-                        className={inputBase}
-                    />
+                    <RoleRows value={roles} onChange={setRoles}/>
                     {error && <p className="text-[12px] text-red-600">{error}</p>}
                     <div className="flex gap-2">
                         <Button size="sm" onClick={handleAdd} disabled={loading}>
                             {loading ? "Adding…" : "Add"}
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={() => { setAdding(false); setError(""); }}>
+                        <Button size="sm" variant="ghost" onClick={() => { setAdding(false); setError(""); setRoles([{department: "", roleTitle: ""}]); }}>
                             Cancel
                         </Button>
                     </div>
