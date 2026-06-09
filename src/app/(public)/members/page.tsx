@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import {prisma} from "@/lib/prisma";
-import {getMandateColor, latestStatus} from "@/lib/utils";
+import {getMandateColor, latestStatus, deptRoleOrder, isRoleSortedDept, STATUS_LABELS, STATUS_COLORS, STATUS_RANK} from "@/lib/utils";
 import {YearbookIndex} from "@/components/public/YearbookIndex";
 import {sectionId} from "@/lib/yearbook";
 
@@ -59,21 +59,17 @@ export default async function MembersPage() {
                             }
                         }
 
-                        const BOARD_PRIORITY = ["president", "vice-president", "vice president", "treasurer"];
-                        const STATUS_RANK: Record<string, number> = {SENIOR: 0, JUNIOR: 1, CANDIDATE_MEMBER: 2, NEWBIE: 3, ALUMNI: 4};
                         for (const [dept, slots] of deptMap) {
-                            if (dept === "Board") {
+                            if (isRoleSortedDept(dept)) {
                                 slots.sort((a, b) => {
-                                    const ai = BOARD_PRIORITY.findIndex(r => a.roleTitle.toLowerCase().includes(r));
-                                    const bi = BOARD_PRIORITY.findIndex(r => b.roleTitle.toLowerCase().includes(r));
-                                    const an = ai === -1 ? BOARD_PRIORITY.length : ai;
-                                    const bn = bi === -1 ? BOARD_PRIORITY.length : bi;
-                                    return an !== bn ? an - bn : a.member.fullName.localeCompare(b.member.fullName);
+                                    const ao = deptRoleOrder(dept, a.roleTitle);
+                                    const bo = deptRoleOrder(dept, b.roleTitle);
+                                    return ao !== bo ? ao - bo : a.member.fullName.localeCompare(b.member.fullName);
                                 });
                             } else {
                                 slots.sort((a, b) => {
-                                    const ra = STATUS_RANK[latestStatus(a.member.statusHistory)] ?? 3;
-                                    const rb = STATUS_RANK[latestStatus(b.member.statusHistory)] ?? 3;
+                                    const ra = STATUS_RANK[latestStatus(a.member.statusHistory)];
+                                    const rb = STATUS_RANK[latestStatus(b.member.statusHistory)];
                                     return ra !== rb ? ra - rb : a.member.fullName.localeCompare(b.member.fullName);
                                 });
                             }
@@ -180,6 +176,18 @@ export default async function MembersPage() {
                                                                                 {roleTitle}
                                                                             </p>
                                                                         )}
+                                                                        {(() => {
+                                                                            const st = latestStatus(member.statusHistory);
+                                                                            const {bg, text} = STATUS_COLORS[st];
+                                                                            return (
+                                                                                <span
+                                                                                    className="inline-block mt-1.5 text-[9px] font-bold tracking-[0.07em] uppercase px-1.5 py-px rounded-full"
+                                                                                    style={{background: bg, color: text}}
+                                                                                >
+                                                                                    {STATUS_LABELS[st]}
+                                                                                </span>
+                                                                            );
+                                                                        })()}
                                                                     </div>
                                                                 </Link>
                                                             );

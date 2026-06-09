@@ -75,6 +75,47 @@ export function latestStatus(
   )[0].status;
 }
 
+export const STATUS_RANK: Record<MemberStatus, number> = {
+  SENIOR: 0,
+  JUNIOR: 1,
+  CANDIDATE_MEMBER: 2,
+  NEWBIE: 3,
+  ALUMNI: 4,
+};
+
+// Returns a sort priority for a role within a department that has known
+// ordered positions (Board, Chairing, Audit). Returns 99 for others.
+export function deptRoleOrder(dept: string, roleTitle: string): number {
+  const r = roleTitle.toLowerCase();
+  const d = dept.toLowerCase();
+  if (d === "board") {
+    if (r.includes("president") && !r.includes("vice")) return 0;
+    if (r.includes("vice") || r.startsWith("vp")) return 1;
+    if (r.includes("treasurer") || r.includes("tesourei")) return 2;
+    return 99;
+  }
+  if (d.includes("chair")) {
+    if (r.includes("president") && !r.includes("vice")) return 0;
+    if ((r.includes("1") || r.includes("first")) && r.includes("secretar")) return 1;
+    if ((r.includes("2") || r.includes("second")) && r.includes("secretar")) return 2;
+    if (r.includes("secretar")) return 3;
+    return 99;
+  }
+  if (d.includes("audit") || d.includes("fiscal")) {
+    if (r.includes("president") && !r.includes("vice")) return 0;
+    if (r.includes("secretar")) return 1;
+    if (r.includes("reporter") || r.includes("relator")) return 2;
+    return 99;
+  }
+  return 99;
+}
+
+// Departments that sort by role title rather than member status
+export function isRoleSortedDept(dept: string): boolean {
+  const d = dept.toLowerCase();
+  return d === "board" || d.includes("chair") || d.includes("audit") || d.includes("fiscal");
+}
+
 export function cn(...classes: (string | undefined | false | null)[]): string {
   return classes.filter(Boolean).join(" ");
 }
