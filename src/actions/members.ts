@@ -264,14 +264,15 @@ function mandateEndDate(mandate: { endsAt: Date | null; academicYear: string }):
 
 /*
  * Add this member to every mandate they were active during (status ≠ ALUMNI).
- * "Active during" = joinedAt ≤ mandate_end AND (leftAt IS NULL OR leftAt ≥ mandate_start).
+ * Active period is derived from status history: first entry's startedAt to
+ * ALUMNI entry's startedAt (or ongoing if no ALUMNI entry).
  * Only adds; never removes existing memberships.
  */
 async function syncMandateMembershipsForMember(memberId: string): Promise<void> {
     const [member, mandates, existing] = await Promise.all([
         prisma.member.findUnique({
             where: {id: memberId},
-            select: {joinedAt: true, leftAt: true},
+            select: {statusHistory: {orderBy: {startedAt: "asc"}, select: {status: true, startedAt: true}}},
         }),
         prisma.mandate.findMany({select: {id: true, academicYear: true, startsAt: true, endsAt: true}}),
         prisma.mandateMembership.findMany({
@@ -279,7 +280,12 @@ async function syncMandateMembershipsForMember(memberId: string): Promise<void> 
             select: {mandateId: true},
         }),
     ]);
-    if (!member) return;
+    if (!member || !member.statusHistory.length) return;
+
+    const firstEntry = member.statusHistory[0];
+    const alumniEntry = member.statusHistory.find(sh => sh.status === "ALUMNI");
+    const firstActive = new Date(firstEntry.startedAt);
+    const leftAt = alumniEntry ? new Date(alumniEntry.startedAt) : null;
 
     const alreadyIn = new Set(existing.map((e) => e.mandateId));
     const toAdd: string[] = [];
@@ -287,8 +293,8 @@ async function syncMandateMembershipsForMember(memberId: string): Promise<void> 
     for (const mandate of mandates) {
         if (alreadyIn.has(mandate.id)) continue;
         const mEnd = mandateEndDate(mandate);
-        const afterJoin  = member.joinedAt <= mEnd;
-        const beforeLeft = !member.leftAt || member.leftAt >= mandate.startsAt;
+        const afterJoin  = firstActive <= mEnd;
+        const beforeLeft = !leftAt || leftAt >= mandate.startsAt;
         if (afterJoin && beforeLeft) toAdd.push(mandate.id);
     }
 

@@ -75,6 +75,18 @@ export function latestStatus(
   )[0].status;
 }
 
+// Status the member held as of a given date (useful for mandate-period views)
+export function statusAtDate(
+  history: { status: MemberStatus; startedAt: Date | string }[],
+  asOf: Date
+): MemberStatus {
+  const relevant = history.filter(h => new Date(h.startedAt) <= asOf);
+  if (!relevant.length) return "NEWBIE";
+  return [...relevant].sort(
+    (a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime()
+  )[0].status;
+}
+
 export const STATUS_RANK: Record<MemberStatus, number> = {
   SENIOR: 0,
   JUNIOR: 1,

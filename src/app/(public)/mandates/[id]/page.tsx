@@ -4,7 +4,7 @@ import {notFound} from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import {prisma} from "@/lib/prisma";
-import {formatDate, formatFullDate, getMandateColor, latestStatus, deptRoleOrder, isRoleSortedDept, STATUS_LABELS, STATUS_COLORS, STATUS_RANK} from "@/lib/utils";
+import {formatDate, formatFullDate, getMandateColor, statusAtDate, deptRoleOrder, isRoleSortedDept, STATUS_LABELS, STATUS_COLORS} from "@/lib/utils";
 
 const MILESTONE_COLORS: Record<string, string> = {
     FOUNDING: "#7ac143",
@@ -90,6 +90,7 @@ export default async function MandatePage({
         }
     }
 
+    const mandateAsOf = mandate.endsAt ?? new Date();
     for (const [dept, slots] of deptMap) {
         if (isRoleSortedDept(dept)) {
             slots.sort((a, b) => {
@@ -98,11 +99,7 @@ export default async function MandatePage({
                 return ao !== bo ? ao - bo : a.member.fullName.localeCompare(b.member.fullName);
             });
         } else {
-            slots.sort((a, b) => {
-                const ra = STATUS_RANK[latestStatus(a.member.statusHistory)];
-                const rb = STATUS_RANK[latestStatus(b.member.statusHistory)];
-                return ra !== rb ? ra - rb : a.member.fullName.localeCompare(b.member.fullName);
-            });
+            slots.sort((a, b) => a.member.fullName.localeCompare(b.member.fullName));
         }
     }
 
@@ -211,74 +208,69 @@ export default async function MandatePage({
                             {departments.map((dept) => {
                                 const slots = deptMap.get(dept)!;
                                 const showLabel = dept !== "General" || departments.length > 1;
+                                const roleSorted = isRoleSortedDept(dept);
+
+                                // Group non-role-sorted slots by status at mandate period
+                                const statusGroups = roleSorted ? null : (() => {
+                                    const groups = new Map<string, Slot[]>();
+                                    for (const slot of slots) {
+                                        const st = statusAtDate(slot.member.statusHistory, mandateAsOf);
+                                        if (!groups.has(st)) groups.set(st, []);
+                                        groups.get(st)!.push(slot);
+                                    }
+                                    return groups;
+                                })();
+
+                                const renderGrid = (gridSlots: Slot[], showBadge: boolean) => (
+                                    <div
+                                        className="grid gap-x-4 gap-y-6"
+                                        style={{gridTemplateColumns: "repeat(auto-fill, minmax(148px, 1fr))"}}
+                                    >
+                                        {gridSlots.map(({key, member, roleTitle}) => {
+                                            const initials = member.fullName.split(" ").map((n: string) => n[0]).slice(0, 2).join("");
+                                            const st = statusAtDate(member.statusHistory, mandateAsOf);
+                                            const {bg, text: tc} = STATUS_COLORS[st];
+                                            return (
+                                                <Link key={key} href={`/members/${member.slug}`} className="group block no-underline">
+                                                    <div
+                                                        className="overflow-hidden aspect-[3/4] rounded-md bg-[var(--surface-raised)] flex items-center justify-center relative shadow-[0_1px_3px_rgba(0,0,0,0.06)] group-hover:scale-[1.03]"
+                                                        style={{transition: "transform 0.22s cubic-bezier(0.16,1,0.3,1)"}}
+                                                    >
+                                                        {member.photoUrl ? (
+                                                            <Image src={member.photoUrl} alt={member.fullName} fill sizes="(max-width: 640px) 30vw, (max-width: 1024px) 18vw, 140px" className="object-cover object-top"/>
+                                                        ) : (
+                                                            <span className="text-[1.4rem] font-extrabold tracking-[-0.03em]" style={{color}}>{initials}</span>
+                                                        )}
+                                                    </div>
+                                                    <div className="mt-2 text-center">
+                                                        <p className="text-xs font-semibold text-[var(--text-1)] leading-[1.35] tracking-[-0.01em]">{member.fullName}</p>
+                                                        {roleTitle && <p className="text-[10px] font-medium text-[var(--text-4)] mt-[3px] tracking-[0.04em]">{roleTitle}</p>}
+                                                        {showBadge && <span className="inline-block mt-1.5 text-[9px] font-bold tracking-[0.07em] uppercase px-1.5 py-px rounded-full" style={{background: bg, color: tc}}>{STATUS_LABELS[st]}</span>}
+                                                    </div>
+                                                </Link>
+                                            );
+                                        })}
+                                    </div>
+                                );
+
                                 return (
                                     <div key={dept}>
                                         {showLabel && (
-                                            <p className="text-[10px] font-bold tracking-[0.14em] uppercase mb-5"
-                                               style={{color}}>
-                                                {dept}
-                                            </p>
+                                            <p className="text-[10px] font-bold tracking-[0.14em] uppercase mb-5" style={{color}}>{dept}</p>
                                         )}
-
-                                        <div
-                                            className="grid gap-x-4 gap-y-6"
-                                            style={{gridTemplateColumns: "repeat(auto-fill, minmax(148px, 1fr))"}}
-                                        >
-                                            {slots.map(({key, member, roleTitle}) => {
-                                                const initials = member.fullName.split(" ").map((n: string) => n[0]).slice(0, 2).join("");
-                                                return (
-                                                    <Link
-                                                        key={key}
-                                                        href={`/members/${member.slug}`}
-                                                        className="group block no-underline"
-                                                    >
-                                                        <div
-                                                            className="overflow-hidden aspect-[3/4] rounded-md bg-[var(--surface-raised)] flex items-center justify-center relative shadow-[0_1px_3px_rgba(0,0,0,0.06)] group-hover:scale-[1.03]"
-                                                            style={{transition: "transform 0.22s cubic-bezier(0.16,1,0.3,1)"}}
-                                                        >
-                                                            {member.photoUrl ? (
-                                                                <Image
-                                                                    src={member.photoUrl}
-                                                                    alt={member.fullName}
-                                                                    fill
-                                                                    sizes="(max-width: 640px) 30vw, (max-width: 1024px) 18vw, 140px"
-                                                                    className="object-cover object-top"
-                                                                />
-                                                            ) : (
-                                                                <span
-                                                                    className="text-[1.4rem] font-extrabold tracking-[-0.03em]"
-                                                                    style={{color}}
-                                                                >
-                                  {initials}
-                                </span>
-                                                            )}
+                                        {roleSorted ? renderGrid(slots, true) : (
+                                            <div className="flex flex-col gap-6">
+                                                {(["SENIOR", "JUNIOR", "CANDIDATE_MEMBER", "NEWBIE", "ALUMNI"] as const)
+                                                    .filter(s => statusGroups!.has(s))
+                                                    .map(status => (
+                                                        <div key={status}>
+                                                            <p className="text-[10px] font-medium text-[var(--text-4)] tracking-[0.1em] uppercase mb-3">{STATUS_LABELS[status]}</p>
+                                                            {renderGrid(statusGroups!.get(status)!, true)}
                                                         </div>
-                                                        <div className="mt-2 text-center">
-                                                            <p className="text-xs font-semibold text-[var(--text-1)] leading-[1.35] tracking-[-0.01em]">
-                                                                {member.fullName}
-                                                            </p>
-                                                            {roleTitle && (
-                                                                <p className="text-[10px] font-medium text-[var(--text-4)] mt-[3px] tracking-[0.04em]">
-                                                                    {roleTitle}
-                                                                </p>
-                                                            )}
-                                                            {(() => {
-                                                                const st = latestStatus(member.statusHistory);
-                                                                const {bg, text} = STATUS_COLORS[st];
-                                                                return (
-                                                                    <span
-                                                                        className="inline-block mt-1.5 text-[9px] font-bold tracking-[0.07em] uppercase px-1.5 py-px rounded-full"
-                                                                        style={{background: bg, color: text}}
-                                                                    >
-                                                                        {STATUS_LABELS[st]}
-                                                                    </span>
-                                                                );
-                                                            })()}
-                                                        </div>
-                                                    </Link>
-                                                );
-                                            })}
-                                        </div>
+                                                    ))
+                                                }
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })}

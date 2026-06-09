@@ -29,7 +29,13 @@ function mandateEndDate(mandate: { endsAt: Date | null; academicYear: string }):
 
 async function main() {
   const [members, mandates, existingMemberships] = await Promise.all([
-    prisma.member.findMany({ select: { id: true, fullName: true, joinedAt: true, leftAt: true } }),
+    prisma.member.findMany({
+      select: {
+        id: true,
+        fullName: true,
+        statusHistory: { orderBy: { startedAt: "asc" }, select: { status: true, startedAt: true } },
+      },
+    }),
     prisma.mandate.findMany({ select: { id: true, academicYear: true, startsAt: true, endsAt: true } }),
     prisma.mandateMembership.findMany({ select: { memberId: true, mandateId: true } }),
   ]);
@@ -41,12 +47,20 @@ async function main() {
   const toCreate: { memberId: string; mandateId: string; departments: string[]; roleTitles: string[] }[] = [];
 
   for (const member of members) {
+    if (!member.statusHistory.length) continue;
+
+    // Derive active period from status history
+    const firstEntry = member.statusHistory[0];
+    const alumniEntry = member.statusHistory.find(sh => sh.status === "ALUMNI");
+    const firstActive = new Date(firstEntry.startedAt);
+    const leftAt = alumniEntry ? new Date(alumniEntry.startedAt) : null;
+
     const added: string[] = [];
     for (const mandate of mandates) {
       if (alreadyIn.has(`${member.id}:${mandate.id}`)) continue;
       const mEnd = mandateEndDate(mandate);
-      const afterJoin  = member.joinedAt <= mEnd;
-      const beforeLeft = !member.leftAt || member.leftAt >= mandate.startsAt;
+      const afterJoin  = firstActive <= mEnd;
+      const beforeLeft = !leftAt || leftAt >= mandate.startsAt;
       if (afterJoin && beforeLeft) {
         toCreate.push({ memberId: member.id, mandateId: mandate.id, departments: [], roleTitles: [] });
         added.push(mandate.academicYear);
