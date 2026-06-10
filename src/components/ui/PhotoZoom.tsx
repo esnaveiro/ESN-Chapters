@@ -38,6 +38,7 @@ export function PhotoZoom({src, alt, width, height, className}: Props) {
                     alt={alt}
                     width={width}
                     height={height}
+                    quality={90}
                     className={className}
                 />
             </button>

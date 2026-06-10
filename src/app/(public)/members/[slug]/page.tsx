@@ -96,8 +96,8 @@ export default async function MemberProfilePage({
                                 <PhotoZoom
                                     src={member.photoUrl}
                                     alt={member.fullName}
-                                    width={200}
-                                    height={256}
+                                    width={400}
+                                    height={512}
                                     className="object-cover object-top w-full h-full"
                                 />
                             ) : (
@@ -172,7 +172,7 @@ export default async function MemberProfilePage({
                 {member.favouriteMemory && (
                     <div className="pt-12 pb-10 border-b border-[var(--border)]">
                         <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--text-4)] mb-4">My favourite memory</p>
-                        <p className="text-[clamp(1.05rem,1.8vw,1.35rem)] italic text-[var(--text-2)] leading-[1.65] max-w-[740px]">
+                        <p className="text-[clamp(1.05rem,1.8vw,1.35rem)] italic text-[var(--text-2)] leading-[1.65]">
               <span
                   aria-hidden
                   className="not-italic mr-1.5 align-[-.55em] leading-none"
@@ -348,8 +348,9 @@ export default async function MemberProfilePage({
                                                 <Image
                                                     src={tribute.author.photoUrl}
                                                     alt={tribute.author.fullName}
-                                                    width={36}
-                                                    height={36}
+                                                    width={72}
+                                                    height={72}
+                                                    quality={90}
                                                     className="object-cover w-full h-full"
                                                 />
                                             ) : (
@@ -427,8 +428,9 @@ function AvatarLink({
                     <Image
                         src={person.photoUrl}
                         alt={person.fullName}
-                        width={size}
-                        height={size}
+                        width={size * 2}
+                        height={size * 2}
+                        quality={90}
                         className="object-cover w-full h-full"
                     />
                 ) : (
