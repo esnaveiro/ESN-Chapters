@@ -4,7 +4,7 @@ import {useEffect, useRef, useState} from "react";
 import {useRouter} from "next/navigation";
 import {Button} from "@/components/ui/Button";
 import {Combobox} from "@/components/ui/Combobox";
-import {addMemberToMandate, removeMemberFromMandate, reorderMandateMemberships, type RoleEntry} from "@/actions/mandates";
+import {addMemberToMandate, removeMemberFromMandate, reorderMandateMemberships, updateMandateMembership, type RoleEntry} from "@/actions/mandates";
 
 type Membership = {
     id: string;
@@ -57,6 +57,10 @@ export function MandateMembersManager({mandateId, memberships, allMembers}: Prop
     const [loading, setLoading] = useState(false);
     const [removingId, setRemovingId] = useState<string | null>(null);
     const [error, setError] = useState("");
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editRoles, setEditRoles] = useState<RoleEntry[]>([]);
+    const [savingId, setSavingId] = useState<string | null>(null);
+    const [editError, setEditError] = useState("");
 
     useEffect(() => { setItems(memberships); }, [memberships]);
 
@@ -79,6 +83,37 @@ export function MandateMembersManager({mandateId, memberships, allMembers}: Prop
         setRoles([{department: "", roleTitle: ""}]);
         router.refresh();
         setLoading(false);
+    }
+
+    function startEdit(ms: Membership) {
+        const roles: RoleEntry[] = ms.departments.length > 0
+            ? ms.departments.map((dept, i) => ({department: dept, roleTitle: ms.roleTitles[i] ?? ""}))
+            : [{department: "", roleTitle: ms.roleTitles[0] ?? ""}];
+        setEditingId(ms.id);
+        setEditRoles(roles);
+        setEditError("");
+    }
+
+    async function handleSave(ms: Membership) {
+        setSavingId(ms.id);
+        setEditError("");
+        const result = await updateMandateMembership(ms.id, editRoles);
+        if (!result.success) {
+            setEditError(result.error);
+            setSavingId(null);
+            return;
+        }
+        setItems(prev => prev.map(item =>
+            item.id === ms.id
+                ? {
+                    ...item,
+                    departments: editRoles.map(r => r.department).filter(Boolean),
+                    roleTitles: editRoles.map(r => r.roleTitle).filter(Boolean),
+                }
+                : item
+        ));
+        setEditingId(null);
+        setSavingId(null);
     }
 
     async function handleRemove(membershipId: string) {
@@ -126,48 +161,78 @@ export function MandateMembersManager({mandateId, memberships, allMembers}: Prop
                     {items.map((ms, index) => (
                         <div
                             key={ms.id}
-                            draggable
+                            draggable={editingId !== ms.id}
                             onDragStart={() => handleDragStart(index)}
                             onDragEnter={() => handleDragEnter(index, ms.id)}
                             onDragEnd={handleDrop}
                             onDragOver={(e) => e.preventDefault()}
                             className={[
-                                "flex items-center gap-3 py-2.5 border-b border-[var(--border)] last:border-0 transition-colors",
+                                "py-2.5 border-b border-[var(--border)] last:border-0 transition-colors",
                                 dragOverId === ms.id && dragItem.current !== index
                                     ? "bg-[var(--surface-raised)]"
                                     : "",
                             ].join(" ")}
                         >
-                            {/* Drag handle */}
-                            <div
-                                className="shrink-0 cursor-grab active:cursor-grabbing text-[var(--text-4)] hover:text-[var(--text-2)] transition-colors"
-                                title="Drag to reorder"
-                            >
-                                <svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor">
-                                    <circle cx="4" cy="3" r="1.5"/>
-                                    <circle cx="8" cy="3" r="1.5"/>
-                                    <circle cx="4" cy="8" r="1.5"/>
-                                    <circle cx="8" cy="8" r="1.5"/>
-                                    <circle cx="4" cy="13" r="1.5"/>
-                                    <circle cx="8" cy="13" r="1.5"/>
-                                </svg>
-                            </div>
+                            <div className="flex items-center gap-3">
+                                {/* Drag handle */}
+                                <div
+                                    className="shrink-0 cursor-grab active:cursor-grabbing text-[var(--text-4)] hover:text-[var(--text-2)] transition-colors"
+                                    title="Drag to reorder"
+                                >
+                                    <svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor">
+                                        <circle cx="4" cy="3" r="1.5"/>
+                                        <circle cx="8" cy="3" r="1.5"/>
+                                        <circle cx="4" cy="8" r="1.5"/>
+                                        <circle cx="8" cy="8" r="1.5"/>
+                                        <circle cx="4" cy="13" r="1.5"/>
+                                        <circle cx="8" cy="13" r="1.5"/>
+                                    </svg>
+                                </div>
 
-                            <div className="flex-1 min-w-0">
-                                <p className="text-[13px] font-medium text-[var(--text-1)] truncate">
-                                    {ms.member.fullName}
-                                </p>
-                                <p className="text-[11px] text-[var(--text-4)]">
-                                    {[...ms.roleTitles, ...ms.departments].join(" · ")}
-                                </p>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-[13px] font-medium text-[var(--text-1)] truncate">
+                                        {ms.member.fullName}
+                                    </p>
+                                    {editingId !== ms.id && (
+                                        <p className="text-[11px] text-[var(--text-4)]">
+                                            {ms.departments.length > 0
+                                                ? ms.departments.map((d, i) => [d, ms.roleTitles[i]].filter(Boolean).join(" · ")).join("  /  ")
+                                                : ms.roleTitles.join(" · ")}
+                                        </p>
+                                    )}
+                                </div>
+                                <div className="flex gap-2 shrink-0">
+                                    {editingId !== ms.id && (
+                                        <button
+                                            onClick={() => startEdit(ms)}
+                                            className="text-[11px] text-[var(--text-4)] hover:text-[var(--accent)] transition-colors"
+                                        >
+                                            Edit
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => handleRemove(ms.id)}
+                                        disabled={removingId === ms.id}
+                                        className="text-[11px] text-[var(--text-4)] hover:text-red-500 transition-colors disabled:opacity-40"
+                                    >
+                                        {removingId === ms.id ? "…" : "Remove"}
+                                    </button>
+                                </div>
                             </div>
-                            <button
-                                onClick={() => handleRemove(ms.id)}
-                                disabled={removingId === ms.id}
-                                className="text-[11px] text-[var(--text-4)] hover:text-red-500 transition-colors shrink-0 disabled:opacity-40"
-                            >
-                                {removingId === ms.id ? "…" : "Remove"}
-                            </button>
+                            {editingId === ms.id && (
+                                <div className="mt-2 flex flex-col gap-2 pl-5">
+                                    <RoleRows value={editRoles} onChange={setEditRoles}/>
+                                    {editError && <p className="text-[12px] text-red-600">{editError}</p>}
+                                    <div className="flex gap-2">
+                                        <Button size="sm" onClick={() => handleSave(ms)} disabled={savingId === ms.id}>
+                                            {savingId === ms.id ? "Saving…" : "Save"}
+                                        </Button>
+                                        <Button size="sm" variant="ghost" onClick={() => { setEditingId(null); setEditError(""); }}>
+                                            Cancel
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
