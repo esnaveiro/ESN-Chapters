@@ -255,16 +255,20 @@ export function BuddyGraph({yearBands, buddyLinks}: Props) {
                         onMouseLeave={() => setHoveredYear(null)}
                         onPointerDown={(e) => {
                             if (e.button !== 0) return;
-                            e.currentTarget.setPointerCapture(e.pointerId);
                             dragRef.current = {startX: e.clientX, startSL: e.currentTarget.scrollLeft};
                             didDragRef.current = false;
-                            setIsDragging(true);
                         }}
                         onPointerMove={(e) => {
                             if (!dragRef.current) return;
                             const dx = e.clientX - dragRef.current.startX;
-                            if (Math.abs(dx) > 4) didDragRef.current = true;
-                            e.currentTarget.scrollLeft = dragRef.current.startSL - dx;
+                            if (Math.abs(dx) > 4) {
+                                if (!didDragRef.current) {
+                                    didDragRef.current = true;
+                                    setIsDragging(true);
+                                    e.currentTarget.setPointerCapture(e.pointerId);
+                                }
+                                e.currentTarget.scrollLeft = dragRef.current.startSL - dx;
+                            }
                         }}
                         onPointerUp={() => { dragRef.current = null; setIsDragging(false); }}
                         onPointerCancel={() => { dragRef.current = null; setIsDragging(false); }}
@@ -337,6 +341,7 @@ export function BuddyGraph({yearBands, buddyLinks}: Props) {
 
                                 {selected.favouriteMemory && (
                                     <div style={{marginBottom: 16}}>
+                                        <p style={{fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-4)", margin: "0 0 6px"}}>My favourite memory</p>
                                         <div style={{fontSize: 36, lineHeight: 0.75, fontFamily: "Georgia, serif", color: bandColor, opacity: 0.5, marginBottom: 4, userSelect: "none"}}>"</div>
                                         <p style={{fontSize: 11.5, lineHeight: 1.65, fontStyle: "italic", color: "var(--text-3)", margin: 0}}>{selected.favouriteMemory}</p>
                                     </div>
@@ -420,6 +425,7 @@ export function BuddyGraph({yearBands, buddyLinks}: Props) {
                                 key={m.id}
                                 transform={`translate(${pos.x},${pos.y})`}
                                 style={{cursor: "pointer", opacity: dimmed ? 0.13 : 1, transition: "opacity 0.15s"}}
+                                onPointerDown={(e) => e.stopPropagation()}
                                 onClick={() => setSelected(m)}
                             >
                                 <circle r={MEM_R + 6} fill={`${sc}09`}/>

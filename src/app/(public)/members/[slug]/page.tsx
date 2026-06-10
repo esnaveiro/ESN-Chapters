@@ -184,7 +184,6 @@ export default async function MemberProfilePage({
                         </p>
                     </div>
                 )}
-
                 {/* ── Three-col info strip ─────────────────────────────── */}
                 <div
                     className="flex flex-col md:grid border-b border-[var(--border)]"
