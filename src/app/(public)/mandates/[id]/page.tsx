@@ -77,9 +77,11 @@ export default async function MandatePage({
     type Slot = { key: string; member: (typeof mandate.memberships)[0]["member"]; roleTitle: string };
     const deptMap = new Map<string, Slot[]>();
     for (const ms of mandate.memberships) {
-        // Skip members who were already ALUMNI before this mandate started
+        // Skip unassigned alumni (General only) if they were already ALUMNI before this mandate.
+        // Members with an explicit role/department are always shown regardless of alumni status.
         const alumniStart = ms.member.statusHistory.find(sh => sh.status === "ALUMNI")?.startedAt;
-        if (alumniStart && new Date(alumniStart) < mandate.startsAt) continue;
+        const hasRole = ms.departments.length > 0 && ms.departments.some(d => d.trim());
+        if (!hasRole && alumniStart && new Date(alumniStart) < mandate.startsAt) continue;
 
         if (ms.departments.length === 0) {
             const key = "General";
