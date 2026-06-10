@@ -128,6 +128,17 @@ export function isRoleSortedDept(dept: string): boolean {
   return d === "board" || d.includes("chair") || d.includes("audit") || d.includes("fiscal");
 }
 
+/** Departments that get their own named section (others collapse into General). */
+export function isNamedSection(dept: string): boolean {
+  const d = dept.toLowerCase().trim();
+  return d === "board"
+    || d.includes("audit") || d.includes("fiscal")
+    || d.includes("chair")
+    || d.includes("coordinator")
+    || d.includes("manager")
+    || d.includes("support");
+}
+
 export function cn(...classes: (string | undefined | false | null)[]): string {
   return classes.filter(Boolean).join(" ");
 }

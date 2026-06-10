@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import {prisma} from "@/lib/prisma";
-import {getMandateColor, latestStatus, statusAtDate, deptRoleOrder, isRoleSortedDept, STATUS_LABELS, STATUS_COLORS} from "@/lib/utils";
+import {getMandateColor, latestStatus, statusAtDate, deptRoleOrder, isRoleSortedDept, isNamedSection, STATUS_LABELS, STATUS_COLORS} from "@/lib/utils";
 import {YearbookIndex} from "@/components/public/YearbookIndex";
 import {sectionId} from "@/lib/yearbook";
 
@@ -58,9 +58,16 @@ export default async function MembersPage() {
                                 deptMap.get("General")!.push({key: ms.id, member: ms.member, roleTitle: ms.roleTitles.join(" · ")});
                             } else {
                                 for (let i = 0; i < ms.departments.length; i++) {
-                                    const dept = ms.departments[i]?.trim() || "General";
-                                    if (!deptMap.has(dept)) deptMap.set(dept, []);
-                                    deptMap.get(dept)!.push({key: `${ms.id}_${i}`, member: ms.member, roleTitle: ms.roleTitles[i] ?? ""});
+                                    const dept = ms.departments[i]?.trim() || "";
+                                    const role = ms.roleTitles[i] ?? "";
+                                    if (dept && isNamedSection(dept)) {
+                                        if (!deptMap.has(dept)) deptMap.set(dept, []);
+                                        deptMap.get(dept)!.push({key: `${ms.id}_${i}`, member: ms.member, roleTitle: role});
+                                    } else {
+                                        const displayRole = [dept, role].filter(Boolean).join(" · ");
+                                        if (!deptMap.has("General")) deptMap.set("General", []);
+                                        deptMap.get("General")!.push({key: `${ms.id}_${i}`, member: ms.member, roleTitle: displayRole});
+                                    }
                                 }
                             }
                         }
@@ -141,9 +148,8 @@ export default async function MembersPage() {
                                         {departments.map(dept => {
                                             const slots = deptMap.get(dept)!;
                                             const showLabel = dept !== "General" || departments.length > 1;
-                                            const roleSorted = isRoleSortedDept(dept);
-
-                                            const statusGroups = roleSorted ? null : (() => {
+                                            // Only General gets status sub-groups
+                                            const statusGroups = dept === "General" ? (() => {
                                                 const groups = new Map<string, Slot[]>();
                                                 for (const slot of slots) {
                                                     const st = statusAtDate(slot.member.statusHistory, mandateAsOf);
@@ -151,26 +157,26 @@ export default async function MembersPage() {
                                                     groups.get(st)!.push(slot);
                                                 }
                                                 return groups;
-                                            })();
+                                            })() : null;
 
                                             return (
                                                 <div key={dept}>
                                                     {showLabel && (
                                                         <p className="text-[10px] font-bold tracking-[0.14em] uppercase mb-4 opacity-70" style={{color}}>{dept}</p>
                                                     )}
-                                                    {roleSorted ? renderGrid(slots, true) : (
+                                                    {statusGroups ? (
                                                         <div className="flex flex-col gap-6">
                                                             {(["SENIOR", "JUNIOR", "CANDIDATE_MEMBER", "NEWBIE", "ALUMNI"] as const)
-                                                                .filter(s => statusGroups!.has(s))
+                                                                .filter(s => statusGroups.has(s))
                                                                 .map(status => (
                                                                     <div key={status}>
                                                                         <p className="text-[10px] font-medium text-[var(--text-4)] tracking-[0.1em] uppercase mb-3">{STATUS_LABELS[status]}</p>
-                                                                        {renderGrid(statusGroups!.get(status)!, true)}
+                                                                        {renderGrid(statusGroups.get(status)!, true)}
                                                                     </div>
                                                                 ))
                                                             }
                                                         </div>
-                                                    )}
+                                                    ) : renderGrid(slots, true)}
                                                 </div>
                                             );
                                         })}
