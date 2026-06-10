@@ -47,6 +47,9 @@ export function BuddyGraph({yearBands, buddyLinks}: Props) {
     const [isMobile, setIsMobile] = useState(false);
     const [vw, setVw] = useState(1280);
     const [vh, setVh] = useState(800);
+    const [isDragging, setIsDragging] = useState(false);
+    const dragRef = useRef<{ startX: number; startSL: number } | null>(null);
+    const didDragRef = useRef(false);
 
     const totalW = yearBands.length * COL_W;
     const mobileViewH = Math.max(300, vh - NAV_H - MOBILE_NAV_H);
@@ -235,9 +238,14 @@ export function BuddyGraph({yearBands, buddyLinks}: Props) {
                 ) : (
                     <div
                         className="no-scrollbar"
-                        style={{width: "100%", height: "100%", overflowX: "auto", overflowY: "auto"}}
+                        style={{
+                            width: "100%", height: "100%", overflowX: "auto", overflowY: "auto",
+                            cursor: isDragging ? "grabbing" : "grab",
+                            userSelect: "none",
+                        }}
                         onScroll={(e) => setScrollLeft(e.currentTarget.scrollLeft)}
                         onMouseMove={(e) => {
+                            if (isDragging) return;
                             const rect = e.currentTarget.getBoundingClientRect();
                             const x = e.clientX - rect.left + e.currentTarget.scrollLeft;
                             const col = Math.floor(x / COL_W);
@@ -245,6 +253,24 @@ export function BuddyGraph({yearBands, buddyLinks}: Props) {
                             setHoveredYear(prev => prev === year ? prev : year);
                         }}
                         onMouseLeave={() => setHoveredYear(null)}
+                        onPointerDown={(e) => {
+                            if (e.button !== 0) return;
+                            e.currentTarget.setPointerCapture(e.pointerId);
+                            dragRef.current = {startX: e.clientX, startSL: e.currentTarget.scrollLeft};
+                            didDragRef.current = false;
+                            setIsDragging(true);
+                        }}
+                        onPointerMove={(e) => {
+                            if (!dragRef.current) return;
+                            const dx = e.clientX - dragRef.current.startX;
+                            if (Math.abs(dx) > 4) didDragRef.current = true;
+                            e.currentTarget.scrollLeft = dragRef.current.startSL - dx;
+                        }}
+                        onPointerUp={() => { dragRef.current = null; setIsDragging(false); }}
+                        onPointerCancel={() => { dragRef.current = null; setIsDragging(false); }}
+                        onClickCapture={(e) => {
+                            if (didDragRef.current) { e.stopPropagation(); e.preventDefault(); }
+                        }}
                     >
                         <svg width={totalW} height={h} style={{display: "block"}}>
                             {renderSvgContent()}
