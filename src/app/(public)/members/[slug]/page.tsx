@@ -58,7 +58,15 @@ export default async function MemberProfilePage({
 
     const currentStatus = latestStatus(member.statusHistory);
 
-    const latestMandate = member.mandateMemberships[member.mandateMemberships.length - 1]?.mandate ?? null;
+    const alumniDate = currentStatus === "ALUMNI"
+        ? member.statusHistory.findLast(sh => sh.status === "ALUMNI")?.startedAt ?? null
+        : null;
+
+    const visibleMemberships = alumniDate
+        ? member.mandateMemberships.filter(m => m.mandate.startsAt <= new Date(alumniDate))
+        : member.mandateMemberships;
+
+    const latestMandate = visibleMemberships[visibleMemberships.length - 1]?.mandate ?? null;
     const accentColor = latestMandate ? getMandateColor(latestMandate.colorIndex, latestMandate.customColor) : "#0ea5e9";
 
     const nameParts = member.fullName.trim().split(/\s+/);
@@ -66,7 +74,7 @@ export default async function MemberProfilePage({
     const restName = nameParts.slice(1).join(" ");
 
     const joinYear = new Date(member.joinedAt).getFullYear();
-    const years = member.mandateMemberships.map(m => m.mandate.academicYear);
+    const years = visibleMemberships.map(m => m.mandate.academicYear);
     const yearSpan = years.length > 0
         ? years.length === 1 ? years[0] : `${years[0]} — ${years[years.length - 1]}`
         : String(joinYear);
@@ -223,14 +231,14 @@ export default async function MemberProfilePage({
                     )}
 
                     {/* Mandates */}
-                    {member.mandateMemberships.length > 0 && (
+                    {visibleMemberships.length > 0 && (
                         <div
                             className="py-7 md:py-9 md:px-10 border-b md:border-b-0"
                             style={{borderRight: hasConnections ? "1px solid var(--border)" : "none"}}
                         >
                             <MetaLabel>Mandates</MetaLabel>
                             <div className="flex flex-col gap-[14px] mt-[18px]">
-                                {member.mandateMemberships.map(({id, mandate, roleTitles, departments}) => {
+                                {visibleMemberships.map(({id, mandate, roleTitles, departments}) => {
                                     const mc = getMandateColor(mandate.colorIndex, mandate.customColor);
                                     return (
                                         <Link key={id} href={`/mandates/${mandate.id}`}

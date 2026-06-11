@@ -40,6 +40,14 @@ const LINKS = [
             </svg>
         ),
     },
+    {
+        href: "/alumni", label: "Alumni",
+        icon: (
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10 3L2 7l8 4 8-4-8-4z"/><path d="M2 7v5"/><path d="M6 9.5v4c0 1.657 1.791 3 4 3s4-1.343 4-3v-4"/>
+            </svg>
+        ),
+    },
 ];
 
 export function Nav() {

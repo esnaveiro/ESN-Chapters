@@ -41,7 +41,7 @@ const MOBILE_NAV_H = 56;
 export function BuddyGraph({yearBands, buddyLinks}: Props) {
     const wrapRef = useRef<HTMLDivElement>(null);
     const [selected, setSelected] = useState<BandMember | null>(null);
-    const [hoveredYear, setHoveredYear] = useState<string | null>(null);
+    const [hoveredCol, setHoveredCol] = useState<number | null>(null);
     const [h, setH] = useState(600);
     const [scrollLeft, setScrollLeft] = useState(0);
     const [isMobile, setIsMobile] = useState(false);
@@ -98,8 +98,8 @@ export function BuddyGraph({yearBands, buddyLinks}: Props) {
 
     /* ── Year hover: collect all IDs connected to the hovered band ── */
     const activeIds = useMemo<Set<string> | null>(() => {
-        if (!hoveredYear) return null;
-        const band = yearBands.find(b => b.academicYear === hoveredYear);
+        if (hoveredCol === null) return null;
+        const band = yearBands[hoveredCol];
         if (!band) return null;
         const yearIds = new Set(band.members.map(m => m.id));
         const ids = new Set(yearIds);
@@ -108,7 +108,7 @@ export function BuddyGraph({yearBands, buddyLinks}: Props) {
             if (yearIds.has(l.newbieId)) ids.add(l.buddyId);
         }
         return ids;
-    }, [hoveredYear, yearBands, buddyLinks]);
+    }, [hoveredCol, yearBands, buddyLinks]);
 
     /* ── Per-link routing ────────────────────────────────────────── */
     const linkRouting = useMemo(() => {
@@ -249,10 +249,9 @@ export function BuddyGraph({yearBands, buddyLinks}: Props) {
                             const rect = e.currentTarget.getBoundingClientRect();
                             const x = e.clientX - rect.left + e.currentTarget.scrollLeft;
                             const col = Math.floor(x / COL_W);
-                            const year = yearBands[col]?.academicYear ?? null;
-                            setHoveredYear(prev => prev === year ? prev : year);
+                            setHoveredCol(prev => prev === col ? prev : col);
                         }}
-                        onMouseLeave={() => setHoveredYear(null)}
+                        onMouseLeave={() => setHoveredCol(null)}
                         onPointerDown={(e) => {
                             if (e.button !== 0) return;
                             dragRef.current = {startX: e.clientX, startSL: e.currentTarget.scrollLeft};
