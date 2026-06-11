@@ -128,6 +128,19 @@ export function isRoleSortedDept(dept: string): boolean {
   return d === "board" || d.includes("chair") || d.includes("audit") || d.includes("fiscal");
 }
 
+/** Sort priority: Board → Managers → Coordinators → Chairing → Audit → Support → General. */
+export function deptSectionOrder(dept: string): number {
+  const d = dept.toLowerCase().trim();
+  if (d === "board") return 0;
+  if (d.includes("manager")) return 1;
+  if (d.includes("coordinator")) return 2;
+  if (d.includes("chair")) return 3;
+  if (d.includes("audit") || d.includes("fiscal")) return 4;
+  if (d.includes("support")) return 5;
+  if (d === "general") return 99;
+  return 50;
+}
+
 /** Departments that get their own named section (others collapse into General). */
 export function isNamedSection(dept: string): boolean {
   const d = dept.toLowerCase().trim();

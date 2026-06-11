@@ -209,7 +209,7 @@ export function MandateLedger({mandates}: { mandates: Mandate[] }) {
                         display: "flex",
                         flexDirection: "column",
                         justifyContent: "flex-end",
-                        paddingBottom: "5rem",
+                        marginTop: "3rem"
                     }}>
                         {mandates.map((m, i) => {
                             const color = getMandateColor(m.colorIndex ?? i, m.customColor);

@@ -4,7 +4,7 @@ import {notFound} from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import {prisma} from "@/lib/prisma";
-import {formatDate, formatFullDate, getMandateColor, statusAtDate, deptRoleOrder, isRoleSortedDept, isNamedSection, STATUS_LABELS, STATUS_COLORS} from "@/lib/utils";
+import {formatDate, formatFullDate, getMandateColor, statusAtDate, deptRoleOrder, isRoleSortedDept, isNamedSection, deptSectionOrder, STATUS_LABELS, STATUS_COLORS} from "@/lib/utils";
 
 const MILESTONE_COLORS: Record<string, string> = {
     FOUNDING: "#7ac143",
@@ -116,14 +116,7 @@ export default async function MandatePage({
         }
     }
 
-    // Sort: Board first, named departments alphabetically, "General" last
-    const departments = [...deptMap.keys()].sort((a, b) => {
-        if (a === "Board") return -1;
-        if (b === "Board") return 1;
-        if (a === "General") return 1;
-        if (b === "General") return -1;
-        return a.localeCompare(b);
-    });
+    const departments = [...deptMap.keys()].sort((a, b) => deptSectionOrder(a) - deptSectionOrder(b));
 
     const idx = allMandates.findIndex(m => m.id === id);
     const prev = idx > 0 ? allMandates[idx - 1] : null;

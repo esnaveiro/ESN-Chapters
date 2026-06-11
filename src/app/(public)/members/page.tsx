@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import {prisma} from "@/lib/prisma";
-import {getMandateColor, latestStatus, statusAtDate, deptRoleOrder, isRoleSortedDept, isNamedSection, STATUS_LABELS, STATUS_COLORS} from "@/lib/utils";
+import {getMandateColor, latestStatus, statusAtDate, deptRoleOrder, isRoleSortedDept, isNamedSection, deptSectionOrder, STATUS_LABELS, STATUS_COLORS} from "@/lib/utils";
 import {YearbookIndex} from "@/components/public/YearbookIndex";
 import {sectionId} from "@/lib/yearbook";
 
@@ -84,13 +84,7 @@ export default async function MembersPage() {
                                 slots.sort((a, b) => a.member.fullName.localeCompare(b.member.fullName));
                             }
                         }
-                        const departments = [...deptMap.keys()].sort((a, b) => {
-                            if (a === "Board") return -1;
-                            if (b === "Board") return 1;
-                            if (a === "General") return 1;
-                            if (b === "General") return -1;
-                            return a.localeCompare(b);
-                        });
+                        const departments = [...deptMap.keys()].sort((a, b) => deptSectionOrder(a) - deptSectionOrder(b));
 
                         const totalSlots = [...deptMap.values()].reduce((n, s) => n + s.length, 0);
 
