@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import {prisma} from "@/lib/prisma";
-import {latestStatus} from "@/lib/utils";
+import {latestStatus, MANDATE_COLORS} from "@/lib/utils";
 import {YearbookIndex} from "@/components/public/YearbookIndex";
 import {sectionId} from "@/lib/yearbook";
 
@@ -35,7 +35,7 @@ export default async function AlumniPage() {
 
     const indexEntries = sortedYears.map((year, idx) => ({
         year,
-        color: "var(--text-3)",
+        color: MANDATE_COLORS[idx % MANDATE_COLORS.length],
         edition: String(sortedYears.length - idx).padStart(2, "0"),
     }));
 
@@ -69,6 +69,7 @@ export default async function AlumniPage() {
                 <div className="flex-1 min-w-0 flex flex-col gap-[88px]">
                     {sortedYears.map((year, idx) => {
                         const group = groups.get(year)!;
+                        const color = MANDATE_COLORS[idx % MANDATE_COLORS.length];
                         const edition = String(sortedYears.length - idx).padStart(2, "0");
 
                         return (
@@ -78,18 +79,18 @@ export default async function AlumniPage() {
                                 className="scroll-mt-[88px]"
                             >
                                 <div className="mb-7">
-                                    <p className="text-[10px] font-bold tracking-[0.2em] uppercase opacity-70 mb-1.5 tabular-nums text-[var(--text-3)]">
+                                    <p className="text-[10px] font-bold tracking-[0.2em] uppercase opacity-70 mb-1.5 tabular-nums" style={{color}}>
                                         Cohort {edition}
                                     </p>
                                     <div className="flex items-baseline gap-5 mb-4">
-                                        <h2 className="text-[clamp(2.8rem,6vw,5.5rem)] font-black tracking-[-0.05em] leading-none text-[var(--text-1)]">
+                                        <h2 className="text-[clamp(2.8rem,6vw,5.5rem)] font-black tracking-[-0.05em] leading-none" style={{color}}>
                                             {year}
                                         </h2>
                                         <span className="text-xs font-semibold text-[var(--text-4)] tracking-[0.06em] uppercase">
                                             {group.length} alumni
                                         </span>
                                     </div>
-                                    <div className="h-px bg-[var(--border)]"/>
+                                    <div className="h-px opacity-50" style={{background: `linear-gradient(to right, ${color} 0%, ${color}00 100%)`}}/>
                                 </div>
 
                                 <div className="grid gap-x-5 gap-y-8" style={{gridTemplateColumns: "repeat(auto-fill, minmax(148px, 1fr))"}}>
@@ -111,7 +112,7 @@ export default async function AlumniPage() {
                                                             style={{transition: "filter 0.22s ease"}}
                                                         />
                                                     ) : (
-                                                        <span className="text-[1.6rem] font-extrabold tracking-[-0.03em] text-[var(--text-3)]">
+                                                        <span className="text-[1.6rem] font-extrabold tracking-[-0.03em]" style={{color}}>
                                                             {initials}
                                                         </span>
                                                     )}
