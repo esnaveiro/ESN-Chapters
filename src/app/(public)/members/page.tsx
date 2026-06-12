@@ -98,7 +98,7 @@ export default async function MembersPage() {
                                         <Link key={key} href={`/members/${member.slug}`} className="group block no-underline">
                                             <div className="overflow-hidden group-hover:scale-[1.03] aspect-[3/4] rounded-md bg-[var(--surface-raised)] flex items-center justify-center relative shadow-[0_1px_3px_rgba(0,0,0,0.06)]" style={{transition: "transform 0.22s cubic-bezier(0.16,1,0.3,1), box-shadow 0.22s ease"}}>
                                                 {member.photoUrl ? (
-                                                    <Image src={member.photoUrl} alt={member.fullName} fill sizes="(max-width: 640px) 30vw, (max-width: 1024px) 20vw, 160px" className="object-cover object-top group-hover:brightness-105" style={{transition: "filter 0.22s ease"}}/>
+                                                    <Image src={member.photoUrl} alt={member.fullName} fill sizes="(max-width: 640px) 45vw, 230px" className="object-cover object-top group-hover:brightness-105" style={{transition: "filter 0.22s ease"}}/>
                                                 ) : (
                                                     <span className="text-[1.6rem] font-extrabold tracking-[-0.03em]" style={{color}}>{initials}</span>
                                                 )}

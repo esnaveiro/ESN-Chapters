@@ -191,7 +191,7 @@ export function HomeFolderStack({
                                                                         src={member.photoUrl}
                                                                         alt={member.fullName}
                                                                         fill
-                                                                        sizes="(max-width: 640px) 30vw, (max-width: 1024px) 20vw, 160px"
+                                                                        sizes="(max-width: 640px) 45vw, 230px"
                                                                         className="object-cover object-top group-hover:brightness-105"
                                                                         style={{transition: "filter 0.22s ease"}}
                                                                     />
