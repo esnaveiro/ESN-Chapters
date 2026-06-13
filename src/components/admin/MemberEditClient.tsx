@@ -13,6 +13,8 @@ import {BuddySelector} from "@/components/admin/BuddySelector";
 import {NewbiesManager} from "@/components/admin/NewbiesManager";
 import {TributeManager} from "@/components/admin/TributeManager";
 import {MemberMandatesManager} from "@/components/admin/MemberMandatesManager";
+import {MemberEventsManager} from "@/components/admin/MemberEventsManager";
+import {MemberMilestonesManager} from "@/components/admin/MemberMilestonesManager";
 import {StatusHistoryBuilder} from "@/components/admin/MemberForm";
 import {deleteMember, setStatusHistory, StatusEntry, updateMember} from "@/actions/members";
 
@@ -22,6 +24,10 @@ const inputBase =
 type MemberOption = { id: string; fullName: string };
 type MandateOption = { id: string; academicYear: string; name: string };
 type MandateMembership = { id: string; departments: string[]; roleTitles: string[]; mandate: MandateOption };
+type EventOption = { id: string; title: string; startsAt: string; showOnTimeline: boolean };
+type EventParticipation = { id: string; role: string; event: EventOption };
+type MilestoneOption = { id: string; title: string; happenedAt: string; type: string };
+type MilestoneLink = { id: string; milestone: MilestoneOption };
 type Tribute = {
     id: string; message: string; createdAt: Date;
     author: { id: string; fullName: string };
@@ -46,6 +52,10 @@ type Props = {
     allMembers: MemberOption[];
     allMandates: MandateOption[];
     mandateMemberships: MandateMembership[];
+    allEvents: EventOption[];
+    eventParticipations: EventParticipation[];
+    allMilestones: MilestoneOption[];
+    milestoneLinks: MilestoneLink[];
 };
 
 function normalizeUrl(url: string): string {
@@ -54,7 +64,7 @@ function normalizeUrl(url: string): string {
     return `https://${url.trim()}`;
 }
 
-export function MemberEditClient({member, allMembers, allMandates, mandateMemberships}: Props) {
+export function MemberEditClient({member, allMembers, allMandates, mandateMemberships, allEvents, eventParticipations, allMilestones, milestoneLinks}: Props) {
     const router = useRouter();
 
     const [photoUrl, setPhotoUrl] = useState(member.photoUrl ?? "");
@@ -222,6 +232,34 @@ export function MemberEditClient({member, allMembers, allMandates, mandateMember
                     memberId={member.id}
                     memberships={mandateMemberships}
                     allMandates={allMandates}
+                />
+            </section>
+
+            <div className="border-t border-[var(--border)] mb-10"/>
+
+            {/* ── Events ───────────────────────────────────────────── */}
+            <section className="mb-10">
+                <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--text-4)] mb-6">
+                    Events
+                </p>
+                <MemberEventsManager
+                    memberId={member.id}
+                    participations={eventParticipations}
+                    allEvents={allEvents}
+                />
+            </section>
+
+            <div className="border-t border-[var(--border)] mb-10"/>
+
+            {/* ── Milestones ───────────────────────────────────────── */}
+            <section className="mb-10">
+                <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--text-4)] mb-6">
+                    Milestones
+                </p>
+                <MemberMilestonesManager
+                    memberId={member.id}
+                    links={milestoneLinks}
+                    allMilestones={allMilestones}
                 />
             </section>
 

@@ -80,7 +80,10 @@ export async function updateBadge(
 export async function deleteBadge(id: string): Promise<ActionResult> {
     try {
         await requireAuth();
-        await prisma.badge.delete({where: {id}});
+        await prisma.$transaction([
+            prisma.memberBadge.deleteMany({where: {badgeId: id}}),
+            prisma.badge.delete({where: {id}}),
+        ]);
         revalidatePath("/admin/badges");
         return {success: true, data: undefined};
     } catch (e) {
@@ -91,7 +94,10 @@ export async function deleteBadge(id: string): Promise<ActionResult> {
 export async function deleteBadges(ids: string[]): Promise<ActionResult> {
     try {
         await requireAuth();
-        await prisma.badge.deleteMany({where: {id: {in: ids}}});
+        await prisma.$transaction([
+            prisma.memberBadge.deleteMany({where: {badgeId: {in: ids}}}),
+            prisma.badge.deleteMany({where: {id: {in: ids}}}),
+        ]);
         revalidatePath("/admin/badges");
         return {success: true, data: undefined};
     } catch (e) {

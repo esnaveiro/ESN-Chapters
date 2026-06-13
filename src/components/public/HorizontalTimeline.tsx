@@ -609,12 +609,17 @@ export function HorizontalTimeline({mandates, milestones, events}: {
                                     position: "absolute",
                                     bottom: stemH,
                                     left: "50%",
-                                    transform: "translateX(-50%)",
+                                    transform: isMsHover
+                                        ? "translateX(-50%) scale(1.04)"
+                                        : "translateX(-50%)",
+                                    transformOrigin: "bottom center",
                                     width: 160,
-                                    background: `${typeColor}22`,
+                                    background: `color-mix(in srgb, ${typeColor} 13%, var(--bg))`,
+                                    border: `1px solid ${typeColor}33`,
                                     borderRadius: "8px 8px 0 0",
                                     overflow: "hidden",
                                     userSelect: "none",
+                                    transition: "transform 0.18s ease",
                                 }}>
                                     {/* Full-opacity top bar */}
                                     <div style={{height: 3, background: typeColor}}/>
@@ -772,12 +777,17 @@ export function HorizontalTimeline({mandates, milestones, events}: {
                                         position: "absolute",
                                         top: stemH,
                                         left: "50%",
-                                        transform: "translateX(-50%)",
+                                        transform: isHovered
+                                            ? "translateX(-50%) scale(1.04)"
+                                            : "translateX(-50%)",
+                                        transformOrigin: "top center",
                                         width: 155,
-                                        background: `${typeColor}22`,
+                                        background: `color-mix(in srgb, ${typeColor} 13%, var(--bg))`,
+                                        border: `1px solid ${typeColor}33`,
                                         borderRadius: "0 0 8px 8px",
                                         overflow: "hidden",
                                         userSelect: "none",
+                                        transition: "transform 0.18s ease",
                                     }}
                                 >
                                     {/* Full-opacity top bar */}

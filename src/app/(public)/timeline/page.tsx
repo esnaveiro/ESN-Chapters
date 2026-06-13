@@ -19,6 +19,7 @@ export default async function TimelinePage() {
         }),
         prisma.milestone.findMany({orderBy: {happenedAt: "asc"}}),
         prisma.event.findMany({
+            where: {showOnTimeline: true},
             orderBy: {startsAt: "asc"},
             include: {_count: {select: {participations: true}}},
         }),

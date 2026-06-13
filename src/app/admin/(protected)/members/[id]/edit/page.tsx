@@ -6,7 +6,7 @@ import {latestStatus} from "@/lib/utils";
 export default async function EditMemberPage({params}: { params: Promise<{ id: string }> }) {
     const {id} = await params;
 
-    const [member, allMembers, allMandates] = await Promise.all([
+    const [member, allMembers, allMandates, allEvents, allMilestones] = await Promise.all([
         prisma.member.findUnique({
             where: {id},
             include: {
@@ -21,10 +21,26 @@ export default async function EditMemberPage({params}: { params: Promise<{ id: s
                     include: {mandate: {select: {id: true, academicYear: true, name: true}}},
                     orderBy: [{mandate: {startsAt: "asc"}}, {sortOrder: "asc"}],
                 },
+                eventParticipations: {
+                    include: {event: {select: {id: true, title: true, startsAt: true, showOnTimeline: true}}},
+                    orderBy: {event: {startsAt: "desc"}},
+                },
+                milestoneMembers: {
+                    include: {milestone: {select: {id: true, title: true, happenedAt: true, type: true}}},
+                    orderBy: {milestone: {happenedAt: "desc"}},
+                },
             },
         }),
         prisma.member.findMany({orderBy: {fullName: "asc"}, select: {id: true, fullName: true}}),
         prisma.mandate.findMany({orderBy: {startsAt: "desc"}, select: {id: true, academicYear: true, name: true}}),
+        prisma.event.findMany({
+            orderBy: {startsAt: "desc"},
+            select: {id: true, title: true, startsAt: true, showOnTimeline: true},
+        }),
+        prisma.milestone.findMany({
+            orderBy: {happenedAt: "desc"},
+            select: {id: true, title: true, happenedAt: true, type: true},
+        }),
     ]);
 
     if (!member) notFound();
@@ -67,6 +83,37 @@ export default async function EditMemberPage({params}: { params: Promise<{ id: s
             departments: ms.departments,
             roleTitles: ms.roleTitles,
             mandate: ms.mandate,
+        }))}
+        allEvents={allEvents.map((e) => ({
+            id: e.id,
+            title: e.title,
+            startsAt: e.startsAt.toISOString(),
+            showOnTimeline: e.showOnTimeline,
+        }))}
+        eventParticipations={member.eventParticipations.map((p) => ({
+            id: p.id,
+            role: p.role,
+            event: {
+                id: p.event.id,
+                title: p.event.title,
+                startsAt: p.event.startsAt.toISOString(),
+                showOnTimeline: p.event.showOnTimeline,
+            },
+        }))}
+        allMilestones={allMilestones.map((m) => ({
+            id: m.id,
+            title: m.title,
+            happenedAt: m.happenedAt.toISOString(),
+            type: m.type,
+        }))}
+        milestoneLinks={member.milestoneMembers.map((l) => ({
+            id: l.id,
+            milestone: {
+                id: l.milestone.id,
+                title: l.milestone.title,
+                happenedAt: l.milestone.happenedAt.toISOString(),
+                type: l.milestone.type,
+            },
         }))}
         />
     );

@@ -86,6 +86,42 @@ export async function deleteMilestone(id: string): Promise<ActionResult> {
     }
 }
 
+export async function addMilestoneMember(
+    milestoneId: string,
+    memberId: string
+): Promise<ActionResult> {
+    try {
+        await requireAuth();
+        await prisma.milestoneMember.create({data: {milestoneId, memberId}});
+        const member = await prisma.member.findUnique({
+            where: {id: memberId},
+            select: {slug: true},
+        });
+        if (member) revalidatePath(`/members/${member.slug}`);
+        return {success: true, data: undefined};
+    } catch (e) {
+        return {success: false, error: String(e)};
+    }
+}
+
+export async function removeMilestoneMember(
+    id: string,
+    memberId: string
+): Promise<ActionResult> {
+    try {
+        await requireAuth();
+        await prisma.milestoneMember.delete({where: {id}});
+        const member = await prisma.member.findUnique({
+            where: {id: memberId},
+            select: {slug: true},
+        });
+        if (member) revalidatePath(`/members/${member.slug}`);
+        return {success: true, data: undefined};
+    } catch (e) {
+        return {success: false, error: String(e)};
+    }
+}
+
 export async function deleteMilestones(ids: string[]): Promise<ActionResult> {
     try {
         await requireAuth();

@@ -18,6 +18,16 @@ function eventDot(type: string) {
     return EVENT_TYPE_COLORS[type] ?? "#f47b20";
 }
 
+const MILESTONE_TYPE_COLORS: Record<string, string> = {
+    EVENT: "#00aeef",
+    FIRST: "#7ac143",
+    AWARD: "#facc15",
+};
+
+function milestoneDot(type: string) {
+    return MILESTONE_TYPE_COLORS[type] ?? "#a855f7";
+}
+
 export default async function MemberProfilePage({
                                                     params,
                                                 }: {
@@ -50,6 +60,10 @@ export default async function MemberProfilePage({
             eventParticipations: {
                 include: {event: true},
                 orderBy: {event: {startsAt: "desc"}},
+            },
+            milestoneMembers: {
+                include: {milestone: true},
+                orderBy: {milestone: {happenedAt: "desc"}},
             },
         },
     });
@@ -329,6 +343,48 @@ export default async function MemberProfilePage({
                                         </span>
                                         <span className="text-[11px] text-[var(--text-4)] whitespace-nowrap tabular-nums">
                                             {formatDate(event.startsAt)}
+                                        </span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Milestones ───────────────────────────────────────── */}
+                {member.milestoneMembers.length > 0 && (
+                    <div className="pt-10">
+                        <div className="flex items-baseline justify-between mb-5">
+                            <MetaLabel>Milestones</MetaLabel>
+                            <span className="text-xs text-[var(--text-4)] tabular-nums">
+                {member.milestoneMembers.length}
+              </span>
+                        </div>
+
+                        <div>
+                            {member.milestoneMembers.map(({milestone}, i) => {
+                                const dot = milestoneDot(milestone.type);
+                                const isLast = i === member.milestoneMembers.length - 1;
+                                return (
+                                    <div
+                                        key={milestone.id}
+                                        className="grid items-center gap-3 py-[10px] [grid-template-columns:1fr_auto] sm:[grid-template-columns:28px_1fr_auto_auto]"
+                                        style={{borderBottom: isLast ? "none" : "1px solid var(--border)"}}
+                                    >
+                                        <span className="hidden sm:inline text-[11px] text-[var(--text-4)] tabular-nums font-medium">
+                                            {String(i + 1).padStart(2, "0")}
+                                        </span>
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            <div className="size-1.5 rounded-full shrink-0" style={{background: dot}}/>
+                                            <p className="text-sm font-semibold text-[var(--text-1)] truncate">
+                                                {milestone.title}
+                                            </p>
+                                        </div>
+                                        <span className="hidden sm:inline text-[11px] text-[var(--text-4)] capitalize whitespace-nowrap">
+                                            {milestone.type.toLowerCase()}
+                                        </span>
+                                        <span className="text-[11px] text-[var(--text-4)] whitespace-nowrap tabular-nums">
+                                            {formatDate(milestone.happenedAt)}
                                         </span>
                                     </div>
                                 );

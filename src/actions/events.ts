@@ -25,6 +25,7 @@ export type EventFormData = {
     startsAt: string;
     endsAt: string;
     mandateId?: string;
+    showOnTimeline?: boolean;
 };
 
 export async function createEvent(
@@ -43,6 +44,7 @@ export async function createEvent(
                 startsAt: new Date(data.startsAt),
                 endsAt: new Date(data.endsAt),
                 mandateId: data.mandateId || null,
+                showOnTimeline: data.showOnTimeline ?? true,
             },
         });
         revalidatePath("/timeline");
@@ -79,10 +81,54 @@ export async function updateEvent(
                 ...(data.mandateId !== undefined && {
                     mandateId: data.mandateId || null,
                 }),
+                ...(data.showOnTimeline !== undefined && {
+                    showOnTimeline: data.showOnTimeline,
+                }),
             },
         });
         revalidatePath("/timeline");
         return {success: true, data: undefined};
+    } catch (e) {
+        return {success: false, error: String(e)};
+    }
+}
+
+/**
+ * Creates a new event and immediately attaches a member to it.
+ * Used from the member edit page so a participation (and, optionally,
+ * a member-only event hidden from the public timeline) can be added in one step.
+ */
+export async function createEventForMember(
+    memberId: string,
+    role: string,
+    data: EventFormData
+): Promise<ActionResult<{ eventId: string }>> {
+    try {
+        await requireAuth();
+        const event = await prisma.event.create({
+            data: {
+                title: data.title,
+                description: data.description || null,
+                coverPhotoUrl: data.coverPhotoUrl || null,
+                locationName: data.locationName || null,
+                scope: data.scope,
+                eventType: data.eventType,
+                startsAt: new Date(data.startsAt),
+                endsAt: new Date(data.endsAt),
+                mandateId: data.mandateId || null,
+                showOnTimeline: data.showOnTimeline ?? true,
+                participations: {
+                    create: {memberId, role: role || "Participant"},
+                },
+            },
+        });
+        const member = await prisma.member.findUnique({
+            where: {id: memberId},
+            select: {slug: true},
+        });
+        if (member) revalidatePath(`/members/${member.slug}`);
+        if (data.showOnTimeline ?? true) revalidatePath("/timeline");
+        return {success: true, data: {eventId: event.id}};
     } catch (e) {
         return {success: false, error: String(e)};
     }
