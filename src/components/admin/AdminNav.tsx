@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import {usePathname} from "next/navigation";
-import {Award, Flag, FolderOpen, Heart, LayoutDashboard, type LucideIcon, Settings, Users,} from "lucide-react";
+import {Award, CalendarDays, Flag, FolderOpen, Heart, LayoutDashboard, type LucideIcon, Settings, Users,} from "lucide-react";
 import {APP_TITLE, NAV_TITLE_ACCENT, NAV_TITLE_REST} from "@/lib/config";
 
 const NAV_ITEMS: { href: string; label: string; icon: LucideIcon; exact?: boolean }[] = [
@@ -11,6 +11,7 @@ const NAV_ITEMS: { href: string; label: string; icon: LucideIcon; exact?: boolea
     {href: "/admin/members", label: "Members", icon: Users},
     {href: "/admin/mandates", label: "Mandates", icon: FolderOpen},
     {href: "/admin/milestones", label: "Milestones", icon: Flag},
+    {href: "/admin/events", label: "Events", icon: CalendarDays},
     {href: "/admin/badges", label: "Badges", icon: Award},
     {href: "/admin/tributes", label: "Tributes", icon: Heart},
     {href: "/admin/settings", label: "Settings", icon: Settings},

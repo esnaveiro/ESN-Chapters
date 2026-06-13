@@ -134,6 +134,36 @@ export async function createEventForMember(
     }
 }
 
+export async function deleteEvent(id: string): Promise<ActionResult> {
+    try {
+        await requireAuth();
+        await prisma.$transaction([
+            prisma.eventParticipation.deleteMany({where: {eventId: id}}),
+            prisma.event.delete({where: {id}}),
+        ]);
+        revalidatePath("/timeline");
+        revalidatePath("/admin/mandates");
+        return {success: true, data: undefined};
+    } catch (e) {
+        return {success: false, error: String(e)};
+    }
+}
+
+export async function deleteEvents(ids: string[]): Promise<ActionResult> {
+    try {
+        await requireAuth();
+        await prisma.$transaction([
+            prisma.eventParticipation.deleteMany({where: {eventId: {in: ids}}}),
+            prisma.event.deleteMany({where: {id: {in: ids}}}),
+        ]);
+        revalidatePath("/timeline");
+        revalidatePath("/admin/mandates");
+        return {success: true, data: undefined};
+    } catch (e) {
+        return {success: false, error: String(e)};
+    }
+}
+
 export async function addParticipant(
     eventId: string,
     memberId: string,
