@@ -269,8 +269,19 @@ export function BuddyGraph({yearBands, buddyLinks}: Props) {
                                 e.currentTarget.scrollLeft = dragRef.current.startSL - dx;
                             }
                         }}
-                        onPointerUp={() => { dragRef.current = null; setIsDragging(false); }}
-                        onPointerCancel={() => { dragRef.current = null; setIsDragging(false); }}
+                        onPointerUp={() => {
+                            dragRef.current = null;
+                            setIsDragging(false);
+                            // Clear the drag guard *after* the trailing click has been
+                            // evaluated by onClickCapture, so the next click on a node
+                            // (whose onPointerDown stops propagation) isn't swallowed.
+                            setTimeout(() => { didDragRef.current = false; }, 0);
+                        }}
+                        onPointerCancel={() => {
+                            dragRef.current = null;
+                            setIsDragging(false);
+                            didDragRef.current = false;
+                        }}
                         onClickCapture={(e) => {
                             if (didDragRef.current) { e.stopPropagation(); e.preventDefault(); }
                         }}
