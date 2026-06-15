@@ -12,8 +12,8 @@ export async function POST(request: Request) {
     }
 
     const {email} = await request.json();
-    if (!email) {
-        return NextResponse.json({message: "Email is required"}, {status: 400});
+    if (typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return NextResponse.json({message: "A valid email is required"}, {status: 400});
     }
 
     const origin = request.headers.get("origin") ?? process.env.NEXT_PUBLIC_APP_URL ?? "";

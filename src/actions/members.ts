@@ -1,7 +1,8 @@
 "use server";
 
 import {prisma} from "@/lib/prisma";
-import {createClient} from "@/lib/supabase/server";
+import {actionError, requireAuth} from "@/lib/auth";
+import {optionalDate, optionalText, optionalUrl, requireDate, requireEnum, requireText} from "@/lib/validation";
 import {MemberStatus} from "@/generated/prisma/enums";
 import {revalidatePath} from "next/cache";
 import {slugify} from "@/lib/utils";
@@ -10,15 +11,6 @@ import {ActionResult} from "@/types";
 /* Accepts YYYY-MM or YYYY-MM-DD, always returns YYYY-MM-01 */
 function toDay(s: string): string {
     return s.length === 7 ? `${s}-01` : s;
-}
-
-async function requireAuth() {
-    const supabase = await createClient();
-    const {
-        data: {user},
-    } = await supabase.auth.getUser();
-    if (!user) throw new Error("Unauthorized");
-    return user;
 }
 
 async function uniqueSlug(name: string, excludeId?: string): Promise<string> {
@@ -59,6 +51,15 @@ export async function createMember(
 ): Promise<ActionResult<{ id: string; slug: string }>> {
     try {
         await requireAuth();
+        requireText(data.fullName, "Full name", 200);
+        requireDate(data.joinedAt, "Joined date");
+        optionalUrl(data.linkedinUrl, "LinkedIn URL");
+        optionalText(data.bio, "Bio");
+        optionalText(data.favouriteMemory, "Favourite memory");
+        for (const entry of data.statusHistory) {
+            requireEnum(entry.status, MemberStatus, "Status");
+            requireDate(entry.startedAt, "Status start date");
+        }
         const slug = await uniqueSlug(data.fullName);
 
         const sorted = [...data.statusHistory].sort(
@@ -101,7 +102,7 @@ export async function createMember(
         if (data.buddyId || data.newbieIds?.length) revalidatePath("/network");
         return {success: true, data: {id: member.id, slug: member.slug}};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }
 
@@ -120,6 +121,9 @@ export async function updateMember(
 ): Promise<ActionResult> {
     try {
         await requireAuth();
+        if (data.fullName !== undefined) requireText(data.fullName, "Full name", 200);
+        optionalDate(data.joinedAt, "Joined date");
+        optionalUrl(data.linkedinUrl, "LinkedIn URL");
         const member = await prisma.member.findUnique({where: {id}});
         if (!member) return {success: false, error: "Member not found"};
 
@@ -145,7 +149,7 @@ export async function updateMember(
         revalidatePath("/admin/members");
         return {success: true, data: undefined};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }
 
@@ -183,7 +187,7 @@ export async function promoteMember(
         revalidatePath("/admin/members");
         return {success: true, data: undefined};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }
 
@@ -193,6 +197,10 @@ export async function setStatusHistory(
 ): Promise<ActionResult> {
     try {
         await requireAuth();
+        for (const entry of entries) {
+            requireEnum(entry.status, MemberStatus, "Status");
+            requireDate(entry.startedAt, "Status start date");
+        }
         const sorted = [...entries].sort(
             (a, b) => new Date(toDay(a.startedAt)).getTime() - new Date(toDay(b.startedAt)).getTime()
         );
@@ -217,7 +225,7 @@ export async function setStatusHistory(
         revalidatePath("/admin/members");
         return {success: true, data: undefined};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }
 
@@ -228,7 +236,7 @@ export async function removeBuddyLink(newbieId: string): Promise<ActionResult> {
         revalidatePath("/network");
         return {success: true, data: undefined};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }
 
@@ -251,7 +259,7 @@ export async function setBuddyLink(
         revalidatePath("/network");
         return {success: true, data: undefined};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }
 
@@ -333,7 +341,7 @@ export async function deleteMember(id: string): Promise<ActionResult> {
         revalidatePath("/admin/members");
         return {success: true, data: undefined};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }
 
@@ -347,7 +355,7 @@ export async function deleteMembers(ids: string[]): Promise<ActionResult> {
         revalidatePath("/admin/members");
         return {success: true, data: undefined};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }
 
@@ -359,8 +367,8 @@ export async function addTribute(
 ): Promise<ActionResult> {
     try {
         await requireAuth();
-        if (message.length > 500)
-            return {success: false, error: "Message too long (max 500 characters)"};
+        requireText(message, "Message", 500);
+        optionalDate(date, "Date");
 
         await prisma.tribute.create({
             data: {
@@ -379,7 +387,7 @@ export async function addTribute(
         revalidatePath(`/admin/members/${recipientId}/edit`);
         return {success: true, data: undefined};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }
 
@@ -390,7 +398,7 @@ export async function deleteTributes(ids: string[]): Promise<ActionResult> {
         revalidatePath("/admin/tributes");
         return {success: true, data: undefined};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }
 
@@ -406,6 +414,6 @@ export async function deleteTribute(tributeId: string, recipientId: string): Pro
         revalidatePath(`/admin/members/${recipientId}/edit`);
         return {success: true, data: undefined};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }

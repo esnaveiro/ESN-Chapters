@@ -49,7 +49,7 @@ export function PhotoUpload({bucket, currentUrl, onUpload, label = "Photo"}: Pro
         <div className="flex flex-col gap-2">
             <label
                 className="text-sm font-medium"
-                style={{color: "var(--color-text-primary)"}}
+                style={{color: "var(--text-1)"}}
             >
                 {label}
             </label>
@@ -58,7 +58,7 @@ export function PhotoUpload({bucket, currentUrl, onUpload, label = "Photo"}: Pro
                 {currentUrl && (
                     <div
                         className="rounded-[var(--radius-md)] overflow-hidden shrink-0"
-                        style={{width: 64, height: 64, backgroundColor: "var(--color-surface-raised)"}}
+                        style={{width: 64, height: 64, backgroundColor: "var(--surface-raised)"}}
                     >
                         <Image
                             src={currentUrl}
@@ -75,12 +75,11 @@ export function PhotoUpload({bucket, currentUrl, onUpload, label = "Photo"}: Pro
                         type="button"
                         onClick={() => inputRef.current?.click()}
                         disabled={uploading}
-                        className="px-4 py-2 rounded-[var(--radius-md)] text-sm font-medium border transition-colors hover:bg-[var(--color-border)] disabled:opacity-50"
+                        className="px-4 py-2 rounded-[var(--radius-md)] text-sm font-medium border transition-colors hover:bg-[var(--border)] disabled:opacity-50"
                         style={{
-                            backgroundColor: "var(--color-surface)",
-                            borderColor: "var(--color-border-strong)",
-                            color: "var(--color-text-primary)",
-
+                            backgroundColor: "var(--surface)",
+                            borderColor: "var(--border-strong)",
+                            color: "var(--text-1)",
                         }}
                     >
                         {uploading ? "Uploading…" : currentUrl ? "Change photo" : "Upload photo"}

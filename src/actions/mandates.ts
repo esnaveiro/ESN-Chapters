@@ -1,18 +1,10 @@
 "use server";
 
 import {prisma} from "@/lib/prisma";
-import {createClient} from "@/lib/supabase/server";
+import {actionError, requireAuth} from "@/lib/auth";
+import {optionalDate, optionalUrl, requireDate, requireText} from "@/lib/validation";
 import {revalidatePath} from "next/cache";
 import {ActionResult} from "@/types";
-
-async function requireAuth() {
-    const supabase = await createClient();
-    const {
-        data: {user},
-    } = await supabase.auth.getUser();
-    if (!user) throw new Error("Unauthorized");
-    return user;
-}
 
 export type MandateFormData = {
     name: string;
@@ -31,6 +23,11 @@ export async function createMandate(
 ): Promise<ActionResult<{ id: string }>> {
     try {
         await requireAuth();
+        requireText(data.name, "Name", 200);
+        requireText(data.academicYear, "Academic year", 20);
+        requireDate(data.startsAt, "Start date");
+        optionalDate(data.endsAt, "End date");
+        optionalUrl(data.photoUrl, "Photo URL");
         const mandate = await prisma.mandate.create({
             data: {
                 name: data.name,
@@ -49,7 +46,7 @@ export async function createMandate(
         revalidatePath("/");
         return {success: true, data: {id: mandate.id}};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }
 
@@ -59,6 +56,11 @@ export async function updateMandate(
 ): Promise<ActionResult> {
     try {
         await requireAuth();
+        if (data.name !== undefined) requireText(data.name, "Name", 200);
+        if (data.academicYear !== undefined) requireText(data.academicYear, "Academic year", 20);
+        optionalDate(data.startsAt, "Start date");
+        optionalDate(data.endsAt, "End date");
+        optionalUrl(data.photoUrl, "Photo URL");
         await prisma.mandate.update({
             where: {id},
             data: {
@@ -80,7 +82,7 @@ export async function updateMandate(
         revalidatePath("/admin/mandates");
         return {success: true, data: undefined};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }
 
@@ -93,7 +95,7 @@ export async function deleteMandate(id: string): Promise<ActionResult> {
         revalidatePath("/");
         return {success: true, data: undefined};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }
 
@@ -106,7 +108,7 @@ export async function deleteMandates(ids: string[]): Promise<ActionResult> {
         revalidatePath("/");
         return {success: true, data: undefined};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }
 
@@ -137,7 +139,7 @@ export async function addMemberToMandate(
         revalidatePath("/admin/mandates");
         return {success: true, data: undefined};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }
 
@@ -152,7 +154,7 @@ export async function removeMemberFromMandate(
         revalidatePath("/admin/mandates");
         return {success: true, data: undefined};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }
 
@@ -178,7 +180,7 @@ export async function updateMandateMembership(
         revalidatePath(`/members/${ms.member.slug}`);
         return {success: true, data: undefined};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }
 
@@ -197,6 +199,6 @@ export async function reorderMandateMemberships(
         revalidatePath(`/admin/mandates/${mandateId}/edit`);
         return {success: true, data: undefined};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }

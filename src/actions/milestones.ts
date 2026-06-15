@@ -1,19 +1,11 @@
 "use server";
 
 import {prisma} from "@/lib/prisma";
-import {createClient} from "@/lib/supabase/server";
+import {actionError, requireAuth} from "@/lib/auth";
+import {optionalDate, optionalText, requireDate, requireEnum, requireText} from "@/lib/validation";
 import {MilestoneType} from "@/generated/prisma/enums";
 import {revalidatePath} from "next/cache";
 import {ActionResult} from "@/types";
-
-async function requireAuth() {
-    const supabase = await createClient();
-    const {
-        data: {user},
-    } = await supabase.auth.getUser();
-    if (!user) throw new Error("Unauthorized");
-    return user;
-}
 
 export type MilestoneFormData = {
     title: string;
@@ -28,6 +20,10 @@ export async function createMilestone(
 ): Promise<ActionResult<{ id: string }>> {
     try {
         await requireAuth();
+        requireText(data.title, "Title", 200);
+        requireEnum(data.type, MilestoneType, "Type");
+        requireDate(data.happenedAt, "Date");
+        optionalText(data.description, "Description");
         const milestone = await prisma.milestone.create({
             data: {
                 title: data.title,
@@ -42,7 +38,7 @@ export async function createMilestone(
         if (data.mandateId) revalidatePath(`/admin/mandates/${data.mandateId}/edit`);
         return {success: true, data: {id: milestone.id}};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }
 
@@ -52,6 +48,9 @@ export async function updateMilestone(
 ): Promise<ActionResult> {
     try {
         await requireAuth();
+        if (data.title !== undefined) requireText(data.title, "Title", 200);
+        if (data.type !== undefined) requireEnum(data.type, MilestoneType, "Type");
+        optionalDate(data.happenedAt, "Date");
         await prisma.milestone.update({
             where: {id},
             data: {
@@ -70,7 +69,7 @@ export async function updateMilestone(
         revalidatePath("/admin/milestones");
         return {success: true, data: undefined};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }
 
@@ -82,7 +81,7 @@ export async function deleteMilestone(id: string): Promise<ActionResult> {
         revalidatePath("/admin/milestones");
         return {success: true, data: undefined};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }
 
@@ -100,7 +99,7 @@ export async function addMilestoneMember(
         if (member) revalidatePath(`/members/${member.slug}`);
         return {success: true, data: undefined};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }
 
@@ -118,7 +117,7 @@ export async function removeMilestoneMember(
         if (member) revalidatePath(`/members/${member.slug}`);
         return {success: true, data: undefined};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }
 
@@ -130,6 +129,6 @@ export async function deleteMilestones(ids: string[]): Promise<ActionResult> {
         revalidatePath("/admin/milestones");
         return {success: true, data: undefined};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }

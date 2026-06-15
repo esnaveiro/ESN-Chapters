@@ -1,18 +1,10 @@
 "use server";
 
 import {prisma} from "@/lib/prisma";
-import {createClient} from "@/lib/supabase/server";
+import {actionError, requireAuth} from "@/lib/auth";
+import {optionalText, requireDate, requireText} from "@/lib/validation";
 import {revalidatePath} from "next/cache";
 import {ActionResult} from "@/types";
-
-async function requireAuth() {
-    const supabase = await createClient();
-    const {
-        data: {user},
-    } = await supabase.auth.getUser();
-    if (!user) throw new Error("Unauthorized");
-    return user;
-}
 
 export async function createBadge(
     name: string,
@@ -21,13 +13,16 @@ export async function createBadge(
 ): Promise<ActionResult<{ id: string }>> {
     try {
         await requireAuth();
+        requireText(name, "Name", 100);
+        optionalText(description, "Description", 500);
+        optionalText(icon, "Icon", 100);
         const badge = await prisma.badge.create({
             data: {name, description: description || null, icon: icon || null},
         });
         revalidatePath("/admin/badges");
         return {success: true, data: {id: badge.id}};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }
 
@@ -38,6 +33,7 @@ export async function awardBadge(
 ): Promise<ActionResult> {
     try {
         const user = await requireAuth();
+        requireDate(awardedAt, "Award date");
         await prisma.memberBadge.create({
             data: {
                 memberId,
@@ -54,7 +50,7 @@ export async function awardBadge(
         revalidatePath("/admin/badges");
         return {success: true, data: undefined};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }
 
@@ -66,6 +62,9 @@ export async function updateBadge(
 ): Promise<ActionResult> {
     try {
         await requireAuth();
+        requireText(name, "Name", 100);
+        optionalText(description, "Description", 500);
+        optionalText(icon, "Icon", 100);
         await prisma.badge.update({
             where: {id},
             data: {name, description: description || null, icon: icon || null},
@@ -73,7 +72,7 @@ export async function updateBadge(
         revalidatePath("/admin/badges");
         return {success: true, data: undefined};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }
 
@@ -87,7 +86,7 @@ export async function deleteBadge(id: string): Promise<ActionResult> {
         revalidatePath("/admin/badges");
         return {success: true, data: undefined};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }
 
@@ -101,7 +100,7 @@ export async function deleteBadges(ids: string[]): Promise<ActionResult> {
         revalidatePath("/admin/badges");
         return {success: true, data: undefined};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }
 
@@ -113,6 +112,6 @@ export async function revokeBadge(memberBadgeId: string, memberSlug: string): Pr
         revalidatePath("/admin/badges");
         return {success: true, data: undefined};
     } catch (e) {
-        return {success: false, error: String(e)};
+        return actionError(e);
     }
 }

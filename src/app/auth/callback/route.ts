@@ -3,7 +3,11 @@ import {createClient} from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
     const {searchParams, origin} = new URL(request.url);
-    const next = searchParams.get("next") ?? "/admin";
+    // Only allow same-origin relative paths to avoid open-redirect abuse.
+    const nextParam = searchParams.get("next");
+    const next = nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//")
+        ? nextParam
+        : "/admin";
     const supabase = await createClient();
 
     // PKCE flow (used by @supabase/ssr): code exchange

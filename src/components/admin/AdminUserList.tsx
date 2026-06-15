@@ -24,21 +24,24 @@ export function AdminUserList({users}: Props) {
     async function handleRevoke(userId: string) {
         setLoading(true);
         setError("");
-        const res = await fetch("/api/admin/revoke", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({userId}),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-            setError(data.message ?? "Failed to revoke access");
-            setLoading(false);
+        try {
+            const res = await fetch("/api/admin/revoke", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({userId}),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                setError(data.message ?? "Failed to revoke access");
+                return;
+            }
             setConfirmingId(null);
-            return;
+            router.refresh();
+        } catch {
+            setError("Network error — please try again.");
+        } finally {
+            setLoading(false);
         }
-        setConfirmingId(null);
-        router.refresh();
-        setLoading(false);
     }
 
     return (

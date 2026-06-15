@@ -14,20 +14,25 @@ export function InviteForm() {
         setLoading(true);
         setResult(null);
 
-        const res = await fetch("/api/admin/invite", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({email}),
-        });
+        try {
+            const res = await fetch("/api/admin/invite", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({email}),
+            });
 
-        const data = await res.json();
-        let message = data.message ?? (res.ok ? "Invitation sent!" : "Failed to send invitation");
-        if (!res.ok && typeof message === "string" && message.toLowerCase().includes("rate limit")) {
-            message = "Email rate limit reached (Supabase free tier allows 2 emails/hour). Wait an hour or configure a custom SMTP provider in the Supabase dashboard.";
+            const data = await res.json();
+            let message = data.message ?? (res.ok ? "Invitation sent!" : "Failed to send invitation");
+            if (!res.ok && typeof message === "string" && message.toLowerCase().includes("rate limit")) {
+                message = "Email rate limit reached (Supabase free tier allows 2 emails/hour). Wait an hour or configure a custom SMTP provider in the Supabase dashboard.";
+            }
+            setResult({success: res.ok, message});
+            if (res.ok) setEmail("");
+        } catch {
+            setResult({success: false, message: "Network error — please try again."});
+        } finally {
+            setLoading(false);
         }
-        setResult({success: res.ok, message});
-        setLoading(false);
-        if (res.ok) setEmail("");
     }
 
     return (

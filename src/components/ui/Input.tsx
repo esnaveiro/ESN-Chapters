@@ -4,7 +4,7 @@ import {cn} from "@/lib/utils";
 export {Select} from "@/components/ui/Select";
 
 const inputBase =
-    "w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] transition-colors duration-150 focus:outline-none focus:border-[var(--color-esn)] focus:ring-2 focus:ring-[var(--color-esn-soft)]";
+    "w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[var(--text-1)] placeholder-[var(--text-3)] transition-colors duration-150 focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-light)]";
 
 type InputProps = InputHTMLAttributes<HTMLInputElement> & {
     label?: string;
@@ -18,8 +18,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
                 {label && (
                     <label
                         htmlFor={id}
-                        className="text-sm font-medium text-[var(--color-text-primary)]"
-                        style={{}}
+                        className="text-sm font-medium text-[var(--text-1)]"
                     >
                         {label}
                     </label>
@@ -52,7 +51,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
                 {label && (
                     <label
                         htmlFor={id}
-                        className="text-sm font-medium text-[var(--color-text-primary)]"
+                        className="text-sm font-medium text-[var(--text-1)]"
                     >
                         {label}
                     </label>
