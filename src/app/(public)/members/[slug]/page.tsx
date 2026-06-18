@@ -3,7 +3,7 @@ import Image from "next/image";
 import {PhotoZoom} from "@/components/ui/PhotoZoom";
 import Link from "next/link";
 import {prisma} from "@/lib/prisma";
-import {formatDate, formatFullDate, getMandateColor, latestStatus, STATUS_LABELS} from "@/lib/utils";
+import {formatDate, formatFullDate, formatMembershipRoles, getMandateColor, latestStatus, STATUS_LABELS} from "@/lib/utils";
 import {BadgeIcon} from "@/components/ui/BadgeIcon";
 
 export const dynamic = "force-dynamic";
@@ -197,8 +197,8 @@ export default async function MemberProfilePage({
                         <p className="text-[clamp(1.05rem,1.8vw,1.35rem)] italic text-[var(--text-2)] leading-[1.65]">
               <span
                   aria-hidden
-                  className="not-italic mr-1.5 align-[-.55em] leading-none"
-                  style={{fontSize: "3rem", fontFamily: "Georgia, serif", color: accentColor}}
+                  className="float-left not-italic mr-2 leading-none"
+                  style={{fontSize: "3rem", fontFamily: "Georgia, serif", color: accentColor, marginTop: "-0.1em"}}
               >
                 &ldquo;
               </span>
@@ -264,8 +264,8 @@ export default async function MemberProfilePage({
                                                     <p className="text-[13px] font-semibold text-[var(--text-1)]">
                                                         {mandate.academicYear}
                                                     </p>
-                                                    {roleTitles.length > 0 && (
-                                                        <p className="text-[11px] text-[var(--text-4)]">{roleTitles.join(" · ")}</p>
+                                                    {formatMembershipRoles(departments, roleTitles) && (
+                                                        <p className="text-[11px] text-[var(--text-4)]">{formatMembershipRoles(departments, roleTitles)}</p>
                                                     )}
                                                 </div>
                                                 {departments.length > 0 && (

@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import {prisma} from "@/lib/prisma";
-import {getMandateColor, latestStatus, statusAtDate, deptRoleOrder, isRoleSortedDept, isNamedSection, deptSectionOrder, STATUS_LABELS, STATUS_COLORS} from "@/lib/utils";
+import {getMandateColor, latestStatus, statusAtDate, deptRoleOrder, isRoleSortedDept, membershipSlots, deptSectionOrder, STATUS_LABELS, STATUS_COLORS} from "@/lib/utils";
 import {YearbookIndex} from "@/components/public/YearbookIndex";
 import {sectionId} from "@/lib/yearbook";
 
@@ -53,23 +53,26 @@ export default async function MembersPage() {
                             const hasRole = ms.departments.length > 0 && ms.departments.some(d => d.trim());
                             if (!hasRole && alumniStart && new Date(alumniStart) < mandate.startsAt) continue;
 
-                            if (ms.departments.length === 0) {
-                                if (!deptMap.has("General")) deptMap.set("General", []);
-                                deptMap.get("General")!.push({key: ms.id, member: ms.member, roleTitle: ms.roleTitles.join(" · ")});
-                            } else {
-                                for (let i = 0; i < ms.departments.length; i++) {
-                                    const dept = ms.departments[i]?.trim() || "";
-                                    const role = ms.roleTitles[i] ?? "";
-                                    if (dept && isNamedSection(dept)) {
-                                        if (!deptMap.has(dept)) deptMap.set(dept, []);
-                                        deptMap.get(dept)!.push({key: `${ms.id}_${i}`, member: ms.member, roleTitle: role});
-                                    } else {
-                                        const displayRole = [dept, role].filter(Boolean).join(" · ");
-                                        if (!deptMap.has("General")) deptMap.set("General", []);
-                                        deptMap.get("General")!.push({key: `${ms.id}_${i}`, member: ms.member, roleTitle: displayRole});
-                                    }
+                            membershipSlots(ms.departments, ms.roleTitles).forEach((slot, i) => {
+                                if (!deptMap.has(slot.section)) deptMap.set(slot.section, []);
+                                deptMap.get(slot.section)!.push({key: `${ms.id}_${i}`, member: ms.member, roleTitle: slot.role});
+                            });
+                        }
+
+                        // A member can land in the same section more than once (duplicate membership
+                        // rows, or several roles); show them once per section, merging role labels.
+                        for (const [section, slots] of deptMap) {
+                            const byMember = new Map<string, Slot>();
+                            for (const s of slots) {
+                                const existing = byMember.get(s.member.id);
+                                if (!existing) {
+                                    byMember.set(s.member.id, {...s});
+                                    continue;
                                 }
+                                const roles = [...new Set([existing.roleTitle, s.roleTitle].flatMap(r => r.split(" · ")).filter(Boolean))];
+                                existing.roleTitle = roles.join(" · ");
                             }
+                            deptMap.set(section, [...byMember.values()]);
                         }
 
                         const mandateAsOf = mandate.endsAt ?? new Date();

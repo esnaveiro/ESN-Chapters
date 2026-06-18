@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import {getMandateColor} from "@/lib/utils";
+import {formatMembershipRoles, getMandateColor} from "@/lib/utils";
 import {Reveal} from "@/components/ui/Reveal";
 
 const TAB_H = 42;
@@ -28,7 +28,7 @@ type MandateSummary = {
     academicYear: string;
     colorIndex: number;
     customColor?: string | null;
-    memberships: Array<{ roleTitles: string[]; member: MemberPreview }>;
+    memberships: Array<{ departments: string[]; roleTitles: string[]; member: MemberPreview }>;
 };
 
 export function HomeFolderStack({
@@ -175,7 +175,7 @@ export function HomeFolderStack({
                                             className="grid gap-x-5 gap-y-8"
                                             style={{gridTemplateColumns: "repeat(auto-fill, minmax(148px, 1fr))"}}
                                         >
-                                            {latestMandate.memberships.map(({member, roleTitles}, cardIdx) => {
+                                            {latestMandate.memberships.map(({member, departments, roleTitles}, cardIdx) => {
                                                 const initials = member.fullName.split(" ").map(n => n[0]).slice(0, 2).join("");
                                                 const cardDelay = cardIdx < 8 ? 820 + cardIdx * 70 : 1380;
                                                 return (
@@ -209,7 +209,7 @@ export function HomeFolderStack({
                                                                     {member.fullName}
                                                                 </p>
                                                                 <p className="text-[10px] font-medium text-[var(--text-4)] mt-[3px] tracking-[0.04em]">
-                                                                    {roleTitles.join(" · ")}
+                                                                    {formatMembershipRoles(departments, roleTitles)}
                                                                 </p>
                                                             </div>
                                                         </Link>

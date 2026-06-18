@@ -152,6 +152,59 @@ export function isNamedSection(dept: string): boolean {
     || d.includes("support");
 }
 
+const isGenericRole = (role: string) => {
+  const r = role.trim().toLowerCase();
+  return !r || r === "member";
+};
+
+/** Formats a single department+role pair for display (drops a generic "Member" role). */
+function formatDeptRole(dept: string, role: string): string {
+  const d = dept.trim();
+  if (isGenericRole(role)) return d || role.trim();
+  return [d, role.trim()].filter(Boolean).join(" · ");
+}
+
+/**
+ * Expands a membership's aligned departments[]/roleTitles[] into the section
+ * slots it should occupy. Named-section departments (Board, Coordinators, …)
+ * each get their own slot, and EVERY member also gets a single "General" slot
+ * so they appear once in the general roster regardless of their positions.
+ * Multiple non-named departments collapse into that one General slot so a member
+ * isn't listed repeatedly.
+ */
+export function membershipSlots(
+  departments: string[],
+  roleTitles: string[]
+): { section: string; role: string }[] {
+  if (departments.length === 0) {
+    return [{ section: "General", role: roleTitles.filter(Boolean).join(" · ") }];
+  }
+  const slots: { section: string; role: string }[] = [];
+  const generalParts: string[] = [];
+  for (let i = 0; i < departments.length; i++) {
+    const dept = departments[i]?.trim() ?? "";
+    const role = roleTitles[i] ?? "";
+    if (dept && isNamedSection(dept)) slots.push({ section: dept, role });
+    else {
+      const part = formatDeptRole(dept, role);
+      if (part) generalParts.push(part);
+    }
+  }
+  slots.push({ section: "General", role: generalParts.join(" · ") });
+  return slots;
+}
+
+/** Inline one-line summary of a member's departments/roles in a mandate. */
+export function formatMembershipRoles(departments: string[], roleTitles: string[]): string {
+  if (departments.length === 0) return roleTitles.filter(Boolean).join(" · ");
+  const parts: string[] = [];
+  for (let i = 0; i < departments.length; i++) {
+    const part = formatDeptRole(departments[i]?.trim() ?? "", roleTitles[i] ?? "");
+    if (part) parts.push(part);
+  }
+  return parts.join(" · ");
+}
+
 export function cn(...classes: (string | undefined | false | null)[]): string {
   return classes.filter(Boolean).join(" ");
 }
