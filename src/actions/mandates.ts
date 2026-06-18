@@ -89,9 +89,16 @@ export async function updateMandate(
 export async function deleteMandate(id: string): Promise<ActionResult> {
     try {
         await requireAuth();
-        await prisma.mandate.delete({where: {id}});
+        // Remove memberships and detach (don't delete) events/milestones first — their FKs restrict.
+        await prisma.$transaction([
+            prisma.mandateMembership.deleteMany({where: {mandateId: id}}),
+            prisma.event.updateMany({where: {mandateId: id}, data: {mandateId: null}}),
+            prisma.milestone.updateMany({where: {mandateId: id}, data: {mandateId: null}}),
+            prisma.mandate.delete({where: {id}}),
+        ]);
         revalidatePath("/mandates");
         revalidatePath("/admin/mandates");
+        revalidatePath("/timeline");
         revalidatePath("/");
         return {success: true, data: undefined};
     } catch (e) {
@@ -102,9 +109,15 @@ export async function deleteMandate(id: string): Promise<ActionResult> {
 export async function deleteMandates(ids: string[]): Promise<ActionResult> {
     try {
         await requireAuth();
-        await prisma.mandate.deleteMany({where: {id: {in: ids}}});
+        await prisma.$transaction([
+            prisma.mandateMembership.deleteMany({where: {mandateId: {in: ids}}}),
+            prisma.event.updateMany({where: {mandateId: {in: ids}}, data: {mandateId: null}}),
+            prisma.milestone.updateMany({where: {mandateId: {in: ids}}, data: {mandateId: null}}),
+            prisma.mandate.deleteMany({where: {id: {in: ids}}}),
+        ]);
         revalidatePath("/mandates");
         revalidatePath("/admin/mandates");
+        revalidatePath("/timeline");
         revalidatePath("/");
         return {success: true, data: undefined};
     } catch (e) {
