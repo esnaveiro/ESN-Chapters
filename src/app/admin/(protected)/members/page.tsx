@@ -15,9 +15,14 @@ export default async function AdminMembersPage() {
                 <h1 className="text-[28px] font-bold text-[var(--text-1)] tracking-[-0.02em] leading-none">
                     Members
                 </h1>
-                <Link href="/admin/members/new">
-                    <Button size="sm">Add member</Button>
-                </Link>
+                <div className="flex items-center gap-2">
+                    <Link href="/admin/members/import">
+                        <Button size="sm" variant="secondary">Import from Excel</Button>
+                    </Link>
+                    <Link href="/admin/members/new">
+                        <Button size="sm">Add member</Button>
+                    </Link>
+                </div>
             </div>
 
             <MembersRoster members={members}/>
